@@ -41,6 +41,7 @@ public class PolarClockWallpaper extends WallpaperService {
         }
     };
 
+    private boolean mWatcherRegistered;
     private TimeWatcher mWatcher;
     private IntentFilter mFilter;
     private ClockEngine mEngine;
@@ -58,7 +59,10 @@ public class PolarClockWallpaper extends WallpaperService {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        unregisterReceiver(mWatcher);
+        if (mWatcherRegistered) {
+            mWatcherRegistered = false;
+            unregisterReceiver(mWatcher);
+        }
         mHandler.removeCallbacks(mDrawClock);
     }
 
@@ -121,12 +125,18 @@ public class PolarClockWallpaper extends WallpaperService {
         @Override
         public void onVisibilityChanged(boolean visible) {
             if (visible) {
-                registerReceiver(mWatcher, mFilter, null, mHandler);
+                if (!mWatcherRegistered) {
+                    mWatcherRegistered = true;
+                    registerReceiver(mWatcher, mFilter, null, mHandler);
+                }
                 mCalendar = new Time();
                 mCalendar.setToNow();
                 mStartTime = mCalendar.second * 1000.0f;                
             } else {
-                unregisterReceiver(mWatcher);
+                if (mWatcherRegistered) {
+                    mWatcherRegistered = false;
+                    unregisterReceiver(mWatcher);
+                }
                 mHandler.removeCallbacks(mDrawClock);
             }
             drawFrame(visible);
