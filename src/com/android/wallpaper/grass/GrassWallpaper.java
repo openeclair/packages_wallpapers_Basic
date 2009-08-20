@@ -66,7 +66,6 @@ public class GrassWallpaper extends WallpaperService {
         @Override
         public void onSurfaceDestroyed(SurfaceHolder holder) {
             super.onSurfaceDestroyed(holder);
-            mRenderer.destroy();
         }
     }
 }

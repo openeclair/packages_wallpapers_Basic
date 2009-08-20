@@ -18,13 +18,10 @@
 #pragma stateFragmentStore(PFSBackground)
 
 #define RSID_STATE 0
-#define RSID_FRAME_COUNT 0
-#define RSID_BLADES_COUNT 1
-#define RSID_WIDTH 2
-#define RSID_HEIGHT 3
-
 #define RSID_BLADES 1
-#define BLADE_STRUCT_FIELDS_COUNT 12
+#define RSID_BLADES_BUFFER 2
+
+#define BLADE_STRUCT_FIELDS_COUNT 13
 #define BLADE_STRUCT_ANGLE 0
 #define BLADE_STRUCT_SIZE 1
 #define BLADE_STRUCT_XPOS 2
@@ -37,8 +34,10 @@
 #define BLADE_STRUCT_H 9
 #define BLADE_STRUCT_S 10
 #define BLADE_STRUCT_B 11
+#define BLADE_STRUCT_TURBULENCEX 12
 
 #define TESSELATION 0.5f
+#define HALF_TESSELATION 0.25f
 
 #define MAX_BEND 0.09f
 
@@ -47,9 +46,10 @@
 #define AFTERNOON 0.6f
 #define DUSK 0.8f
 
-#define SECONDS_IN_DAY 24.0f * 3600.0f
+#define SECONDS_IN_DAY 86400.0f
 
 #define PI 3.1415926f
+#define HALF_PI 1.570796326f
 
 #define REAL_TIME 0
 
@@ -65,8 +65,7 @@ void alpha(float a) {
 }
 
 void drawNight(int width, int height) {
-    bindProgramFragment(NAMED_PFNight);
-    bindTexture(NAMED_PFNight, 0, NAMED_TNight);
+    bindTexture(NAMED_PFBackground, 0, NAMED_TNight);
     drawQuadTexCoords(
             0.0f, -32.0f, 0.0f,
             0.0f, 1.0f,
@@ -76,7 +75,6 @@ void drawNight(int width, int height) {
             2.0f, 0.0f,
             0.0f, 1024.0f - 32.0f, 0.0f,
             0.0f, 0.0f);
-    bindProgramFragment(NAMED_PFBackground);
 }
 
 void drawSunrise(int width, int height) {
@@ -94,13 +92,13 @@ void drawSunset(int width, int height) {
     drawRect(0.0f, 0.0f, width, height, 0.0f);
 }
 
-void drawBlade(int index, float now, int frameCount) {
-    float *bladeStruct = loadArrayF(RSID_BLADES, index);
+int drawBlade(float *bladeStruct, float *bladeBuffer, int *bladeColor, float now, int frameCount) {
     float offset = bladeStruct[BLADE_STRUCT_OFFSET];
     float scale = bladeStruct[BLADE_STRUCT_SCALE];
     float angle = bladeStruct[BLADE_STRUCT_ANGLE];
     float hardness = bladeStruct[BLADE_STRUCT_HARDNESS];
-    
+    float turbulenceX = bladeStruct[BLADE_STRUCT_TURBULENCEX];
+
     float xpos = bladeStruct[BLADE_STRUCT_XPOS];
     float ypos = bladeStruct[BLADE_STRUCT_YPOS];
 
@@ -126,62 +124,112 @@ void drawBlade(int index, float now, int frameCount) {
         newB = 0.0f;
     }
 
-    hsb(h, s, lerpf(0, b, newB), 1.0f);
+    int color = hsbToAbgr(h, s, lerpf(0, b, newB), 1.0f);
 
-    float newAngle = turbulencef2(xpos * 0.006f, frameCount * 0.006f, 4.0f) - 0.5f;
+    float newAngle = turbulencef2(turbulenceX, frameCount * 0.006f, 4.0f) - 0.5f;
     newAngle *= 0.5f;
     angle = clampf(angle + (newAngle + offset - angle) * 0.15f, -MAX_BEND, MAX_BEND);
 
-    float currentAngle = PI * 0.5f;
+    float currentAngle = HALF_PI;
 
     float bottomX = xpos;
     float bottomY = ypos;
 
-    int i = size / TESSELATION;
-    float lx = lengthX * TESSELATION;
-    float ly = lengthY * TESSELATION;
-    float ss = 4.0f / i + scale * TESSELATION;
-    float sh = 0.5f * TESSELATION;
-    float d = angle * hardness * TESSELATION;
+    float d = angle * hardness;
 
-    for ( ; i > 0; i--) {
-        float topX = bottomX - cosf(currentAngle) * size * lx;
-        float topY = bottomY - sinf(currentAngle) * size * ly;
-        currentAngle += d;
+    int triangles = size * 2;
 
-        float spi = (i - 1) * ss;
-        float si = i * ss;
+    for ( ; size > 0; size -= 1) {
+        float topX = bottomX - cosf_fast(currentAngle) * lengthX;
+        float topY = bottomY - sinf_fast(currentAngle) * lengthY;
 
-        drawQuad(topX + spi, topY, 0.0f,
-                 topX - spi, topY, 0.0f,
-                 bottomX - si, bottomY + sh, 0.0f,
-                 bottomX + si, bottomY + sh, 0.0f);
+        float si = size * scale;
+        float spi = si - scale;
+
+        float bottomLeft = bottomX - si;
+        float bottomRight = bottomX + si;
+        float topLeft = topX - spi;
+        float topRight = topX + spi;
+        float bottom = bottomY + HALF_TESSELATION;
+
+        // First triangle
+        bladeColor[0] = color;                          // V1.ABGR
+
+        bladeBuffer[1] = bottomLeft;                    // V1.X
+        bladeBuffer[2] = bottom;                        // V1.Y
+
+        bladeColor[5] = color;                          // V1.ABGR
+
+        bladeBuffer[6] = topLeft;                       // V2.X
+        bladeBuffer[7] = topY;                          // V2.Y
+
+        bladeColor[10] = color;                         // V3.ABGR
+
+        bladeBuffer[11] = topRight;                     // V3.X
+        bladeBuffer[12] = topY;                         // V3.Y
+
+        // Second triangle
+        bladeBuffer += 15;
+        bladeColor += 15;
+
+        bladeColor[0] = color;                          // V1.ABGR
+
+        bladeBuffer[1] = bottomLeft;                    // V1.X
+        bladeBuffer[2] = bottom;                        // V1.Y
+
+        bladeColor[5] = color;                          // V2.ABGR
+
+        bladeBuffer[6] = topRight;                      // V2.X
+        bladeBuffer[7] = topY;                          // V2.Y
+
+        bladeColor[10] = color;                         // V3.ABGR
+
+        bladeBuffer[11] = bottomRight;                  // V3.X
+        bladeBuffer[12] = bottom;                       // V3.Y
+
+        bladeBuffer += 15;
+        bladeColor += 15;
 
         bottomX = topX;
         bottomY = topY;
+
+        currentAngle += d;
     }
 
-    storeF(RSID_BLADES, index + BLADE_STRUCT_ANGLE, angle);
+    bladeStruct[BLADE_STRUCT_ANGLE] = angle;
+
+    // 3 vertices per triangle, 5 properties per vertex (RGBA, X, Y, S, T)
+    return triangles * 15;
 }
 
 void drawBlades(float now, int frameCount) {
     // For anti-aliasing
     bindTexture(NAMED_PFBackground, 0, NAMED_TAa);
 
-    int bladesCount = loadI32(RSID_STATE, RSID_BLADES_COUNT);
-    int count = bladesCount * BLADE_STRUCT_FIELDS_COUNT;
+    int bladesCount = State_bladesCount;
+    int trianglesCount = State_trianglesCount;
 
     int i = 0;
-    for ( ; i < count; i += BLADE_STRUCT_FIELDS_COUNT) {
-        drawBlade(i, now, frameCount);
+    float *bladeStruct = loadArrayF(RSID_BLADES, 0);
+    float *bladeBuffer = loadArrayF(RSID_BLADES_BUFFER, 0);
+    int *bladeColor = loadArrayI32(RSID_BLADES_BUFFER, 0);
+
+    for ( ; i < bladesCount; i += 1) {
+        int offset = drawBlade(bladeStruct, bladeBuffer, bladeColor, now, frameCount);
+        bladeBuffer += offset;
+        bladeColor += offset;
+        bladeStruct += BLADE_STRUCT_FIELDS_COUNT;
     }
+
+    uploadToBufferObject(NAMED_BladesBuffer);
+    drawSimpleMeshRange(NAMED_BladesMesh, 0, trianglesCount * 3);
 }
 
 int main(int launchID) {
-    int width = loadI32(RSID_STATE, RSID_WIDTH);
-    int height = loadI32(RSID_STATE, RSID_HEIGHT);
+    int width = State_width;
+    int height = State_height;
 
-    int frameCount = loadI32(RSID_STATE, RSID_FRAME_COUNT);
+    int frameCount = State_frameCount;
     float now = time(frameCount);
     alpha(1.0f);
 
@@ -206,7 +254,7 @@ int main(int launchID) {
     drawBlades(now, frameCount);
 
     frameCount++;
-    storeI32(RSID_STATE, RSID_FRAME_COUNT, frameCount);
+    storeI32(RSID_STATE, OFFSETOF_WorldState_frameCount, frameCount);
 
     return 1;
 }
