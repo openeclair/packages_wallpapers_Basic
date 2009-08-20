@@ -38,7 +38,7 @@
 #define BLADE_STRUCT_S 10
 #define BLADE_STRUCT_B 11
 
-#define TESSELATION 2.0f
+#define TESSELATION 0.5f
 
 #define MAX_BEND 0.09f
 
@@ -129,20 +129,20 @@ void drawBlade(int index, float now, int frameCount) {
     hsb(h, s, lerpf(0, b, newB), 1.0f);
 
     float newAngle = turbulencef2(xpos * 0.006f, frameCount * 0.006f, 4.0f) - 0.5f;
-    newAngle /= 2.0f;
+    newAngle *= 0.5f;
     angle = clampf(angle + (newAngle + offset - angle) * 0.15f, -MAX_BEND, MAX_BEND);
 
-    float currentAngle = PI / 2.0f;
+    float currentAngle = PI * 0.5f;
 
     float bottomX = xpos;
     float bottomY = ypos;
 
-    int i = size * TESSELATION;
-    float lx = lengthX / TESSELATION;
-    float ly = lengthY / TESSELATION;
-    float ss = 4.0f / i + scale / TESSELATION;
-    float sh = 0.5f / TESSELATION;
-    float d = angle * hardness / TESSELATION;
+    int i = size / TESSELATION;
+    float lx = lengthX * TESSELATION;
+    float ly = lengthY * TESSELATION;
+    float ss = 4.0f / i + scale * TESSELATION;
+    float sh = 0.5f * TESSELATION;
+    float d = angle * hardness * TESSELATION;
 
     for ( ; i > 0; i--) {
         float topX = bottomX - cosf(currentAngle) * size * lx;

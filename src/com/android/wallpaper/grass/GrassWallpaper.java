@@ -33,7 +33,6 @@ public class GrassWallpaper extends WallpaperService {
         @Override
         public void onCreate(SurfaceHolder surfaceHolder) {
             super.onCreate(surfaceHolder);
-            surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_GPU);
         }
 
         @Override
