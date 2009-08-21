@@ -35,16 +35,8 @@ import java.util.TimeZone;
 
 public class PolarClockWallpaper extends WallpaperService {
     private final Handler mHandler = new Handler();
-    private final Runnable mDrawClock = new Runnable() {
-        public void run() {
-            mEngine.drawFrame(true);
-        }
-    };
 
-    private boolean mWatcherRegistered;
-    private TimeWatcher mWatcher;
     private IntentFilter mFilter;
-    private ClockEngine mEngine;
 
     @Override
     public void onCreate() {
@@ -52,31 +44,15 @@ public class PolarClockWallpaper extends WallpaperService {
 
         mFilter = new IntentFilter();
         mFilter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
-
-        mWatcher = new TimeWatcher();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (mWatcherRegistered) {
-            mWatcherRegistered = false;
-            unregisterReceiver(mWatcher);
-        }
-        mHandler.removeCallbacks(mDrawClock);
     }
 
     public Engine onCreateEngine() {
-        mEngine = new ClockEngine();
-        return mEngine;
-    }
-
-    class TimeWatcher extends BroadcastReceiver {
-        public void onReceive(Context context, Intent intent) {
-            final String timeZone = intent.getStringExtra("time-zone");
-            mEngine.mCalendar = new Time(TimeZone.getTimeZone(timeZone).getID());
-            mEngine.drawFrame(true);
-        }
+        return new ClockEngine();
     }
 
     class ClockEngine extends Engine {
@@ -89,6 +65,7 @@ public class PolarClockWallpaper extends WallpaperService {
 
         private static final int COLORS_CACHE_COUNT = 720;
         
+        private boolean mWatcherRegistered;
         private float mStartTime;
         private Time mCalendar;
 
@@ -96,6 +73,20 @@ public class PolarClockWallpaper extends WallpaperService {
         private final RectF mRect = new RectF();
         private final int[] mColors;
 
+        private final BroadcastReceiver mWatcher = new BroadcastReceiver() {
+            public void onReceive(Context context, Intent intent) {
+                final String timeZone = intent.getStringExtra("time-zone");
+                mCalendar = new Time(TimeZone.getTimeZone(timeZone).getID());
+                drawFrame(true);
+            }
+        };
+        
+        private final Runnable mDrawClock = new Runnable() {
+            public void run() {
+                drawFrame(true);
+            }
+        };
+        
         ClockEngine() {
             mColors = new int[COLORS_CACHE_COUNT];
 
@@ -120,6 +111,16 @@ public class PolarClockWallpaper extends WallpaperService {
             paint.setStrokeWidth(RING_THICKNESS);
             paint.setStrokeCap(Paint.Cap.ROUND);
             paint.setStyle(Paint.Style.STROKE);
+        }
+
+        @Override
+        public void onDestroy() {
+            super.onDestroy();
+            if (mWatcherRegistered) {
+                mWatcherRegistered = false;
+                unregisterReceiver(mWatcher);
+            }
+            mHandler.removeCallbacks(mDrawClock);
         }
 
         @Override
