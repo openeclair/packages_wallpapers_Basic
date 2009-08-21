@@ -30,6 +30,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.text.format.Time;
+import android.util.MathUtils;
 
 import java.util.TimeZone;
 
@@ -71,7 +72,9 @@ public class PolarClockWallpaper extends WallpaperService {
 
         private final Paint mPaint = new Paint();
         private final RectF mRect = new RectF();
-        private final int[] mColors;
+        private final int[] mColors = new int[COLORS_CACHE_COUNT];
+
+        private float mOffsetX;
 
         private final BroadcastReceiver mWatcher = new BroadcastReceiver() {
             public void onReceive(Context context, Intent intent) {
@@ -86,21 +89,22 @@ public class PolarClockWallpaper extends WallpaperService {
                 drawFrame(true);
             }
         };
-        
-        ClockEngine() {
-            mColors = new int[COLORS_CACHE_COUNT];
+        private boolean mVisible;
 
+        ClockEngine() {
             final int[] colors = mColors;
             final int count = colors.length;
 
+            float invCount = 1.0f / (float) COLORS_CACHE_COUNT;
             for (int i = 0; i < count; i++) {
-                colors[i] = Color.HSBtoColor(i / (float) COLORS_CACHE_COUNT, SATURATION, BRIGHTNESS);
+                colors[i] = Color.HSBtoColor(i * invCount, SATURATION, BRIGHTNESS);
             }
         }
 
         @Override
         public void onCreate(SurfaceHolder surfaceHolder) {
             super.onCreate(surfaceHolder);
+            surfaceHolder.setSizeFromLayout();
 
             mCalendar = new Time();
             mCalendar.setToNow();
@@ -125,6 +129,7 @@ public class PolarClockWallpaper extends WallpaperService {
 
         @Override
         public void onVisibilityChanged(boolean visible) {
+            mVisible = visible;
             if (visible) {
                 if (!mWatcherRegistered) {
                     mWatcherRegistered = true;
@@ -159,6 +164,12 @@ public class PolarClockWallpaper extends WallpaperService {
             super.onSurfaceDestroyed(holder);
             drawFrame(false);
         }
+
+        @Override
+        public void onOffsetsChanged(float xOffset, float yOffset, int xPixels, int yPixels) {
+            mOffsetX = xOffset;
+            drawFrame(mVisible);
+        }
         
         void drawFrame(boolean redraw) {
             final SurfaceHolder holder = getSurfaceHolder();
@@ -177,12 +188,18 @@ public class PolarClockWallpaper extends WallpaperService {
                     calendar.setToNow();
                     calendar.normalize(false);
 
+                    int s = width / 2;
+                    int t = height / 2;
+
                     c.drawColor(0xffffffff);
-                    c.translate(width / 2.0f, height/ 2.0f);
+                    c.translate(s + MathUtils.lerp(s, -s, mOffsetX), t);
                     c.rotate(-90.0f);
+                    if (height < width) {
+                        c.scale(0.9f, 0.9f);
+                    }
 
                     // Draw seconds  
-                    float size = width / 2.0f / 2.0f - RING_THICKNESS;
+                    float size = Math.min(width, height) * 0.5f - RING_THICKNESS;
                     final RectF rect = mRect;
                     rect.set(-size, -size, size, size);
 
