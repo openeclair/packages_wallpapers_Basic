@@ -28,6 +28,8 @@
     
     <!-- Wallpaper showing grass and the sky -->
     <string name="wallpaper_grass">Grass</string>
+    <!-- Wallpaper showing a galaxy -->
+    <string name="wallpaper_galaxy">Galaxy</string>
     <!-- Wallpaper showing a clock -->
     <string name="wallpaper_clock">Polar clock</string>
 </resources>

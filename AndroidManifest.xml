@@ -35,6 +35,15 @@
         </service>
 
         <service
+            android:label="@string/wallpaper_galaxy"
+            android:name="com.android.wallpaper.galaxy.GalaxyWallpaper"
+            android:permission="android.permission.BIND_WALLPAPER">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+        </service>
+
+        <service
             android:label="@string/wallpaper_clock"
             android:name="com.android.wallpaper.polarclock.PolarClockWallpaper"
             android:permission="android.permission.BIND_WALLPAPER">

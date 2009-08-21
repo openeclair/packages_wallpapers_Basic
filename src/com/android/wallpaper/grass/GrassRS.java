@@ -92,6 +92,7 @@ class GrassRS {
 
     private int mTriangles;
     private final float[] mFloatData5 = new float[5];
+    private SimpleMesh mBladesMesh;
 
     public GrassRS(int width, int height) {
         mWidth = width;
@@ -178,12 +179,12 @@ class GrassRS {
         final SimpleMesh.Builder meshBuilder = new SimpleMesh.Builder(mRS);
         final int vertexSlot = meshBuilder.addVertexType(vertexElement, triangles * 3);
         meshBuilder.setPrimitive(Primitive.TRIANGLE);
-        SimpleMesh bladesMesh = meshBuilder.create();
-        bladesMesh.setName("BladesMesh");
+        mBladesMesh = meshBuilder.create();
+        mBladesMesh.setName("BladesMesh");
 
-        mBladesBuffer = bladesMesh.createVertexAllocation(vertexSlot);
+        mBladesBuffer = mBladesMesh.createVertexAllocation(vertexSlot);
         mBladesBuffer.setName("BladesBuffer");
-        bladesMesh.bindVertexAllocation(mBladesBuffer, 0);
+        mBladesMesh.bindVertexAllocation(mBladesBuffer, 0);
 
         // Assign the texture coordinates of each triangle
         final float[] floatData = mFloatData5;
