@@ -87,6 +87,12 @@ class GalaxyRS {
     private ProgramStore mPfsLights;
     @SuppressWarnings({"FieldCanBeLocal"})
     private ProgramVertex mPvBackground;
+    @SuppressWarnings({"FieldCanBeLocal"})
+    private Sampler mSampler;
+    @SuppressWarnings({"FieldCanBeLocal"})
+    private Sampler mLightSampler;
+    @SuppressWarnings({"FieldCanBeLocal"})
+    private ProgramVertex.MatrixAllocation mPvOrthoAlloc;
 
     @SuppressWarnings({"FieldCanBeLocal"})
     private Allocation[] mTextures;
@@ -272,8 +278,7 @@ class GalaxyRS {
 
         final int count = textures.length;
         for (int i = 0; i < count; i++) {
-            final Allocation texture = textures[i];
-            texture.uploadToTexture(0);
+            textures[i].uploadToTexture(0);
         }
     }
 
@@ -297,28 +302,28 @@ class GalaxyRS {
         sampleBuilder.setMag(LINEAR);
         sampleBuilder.setWrapS(WRAP);
         sampleBuilder.setWrapT(WRAP);
-        Sampler sampler = sampleBuilder.create();
+        mSampler = sampleBuilder.create();
 
         ProgramFragment.Builder builder = new ProgramFragment.Builder(mRS, null, null);
         builder.setTexEnable(true, 0);
         builder.setTexEnvMode(REPLACE, 0);
         mPfBackground = builder.create();
         mPfBackground.setName("PFBackground");
-        mPfBackground.bindSampler(sampler, 0);
+        mPfBackground.bindSampler(mSampler, 0);
 
         sampleBuilder = new Sampler.Builder(mRS);
         sampleBuilder.setMin(NEAREST);
         sampleBuilder.setMag(NEAREST);
         sampleBuilder.setWrapS(WRAP);
         sampleBuilder.setWrapT(WRAP);
-        Sampler lightSampler = sampleBuilder.create();
+        mLightSampler = sampleBuilder.create();
 
         builder = new ProgramFragment.Builder(mRS, null, null);
         builder.setTexEnable(true, 0);
         builder.setTexEnvMode(MODULATE, 0);
         mPfLighting = builder.create();
         mPfLighting.setName("PFLighting");
-        mPfLighting.bindSampler(lightSampler, 0);
+        mPfLighting.bindSampler(mLightSampler, 0);
     }
 
     private void createProgramFragmentStore() {
@@ -338,13 +343,13 @@ class GalaxyRS {
     }
 
     private void createProgramVertex() {
-        ProgramVertex.MatrixAllocation pvOrthoAlloc = new ProgramVertex.MatrixAllocation(mRS);
+        mPvOrthoAlloc = new ProgramVertex.MatrixAllocation(mRS);
         //mPvOrthoAlloc.setupProjectionNormalized(mWidth, mHeight);
-        pvOrthoAlloc.setupOrthoWindow(mWidth, mHeight);        
+        mPvOrthoAlloc.setupOrthoWindow(mWidth, mHeight);        
 
         ProgramVertex.Builder builder = new ProgramVertex.Builder(mRS, null, null);
         mPvBackground = builder.create();
-        mPvBackground.bindAllocation(pvOrthoAlloc);
+        mPvBackground.bindAllocation(mPvOrthoAlloc);
         mPvBackground.setName("PVBackground");
     }
 }

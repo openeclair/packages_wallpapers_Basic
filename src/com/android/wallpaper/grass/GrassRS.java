@@ -80,6 +80,10 @@ class GrassRS {
     private ProgramStore mPfsBackground;
     @SuppressWarnings({ "FieldCanBeLocal" })
     private ProgramVertex mPvBackground;
+    @SuppressWarnings({"FieldCanBeLocal"})
+    private Sampler mSampler;
+    @SuppressWarnings({"FieldCanBeLocal"})
+    private ProgramVertex.MatrixAllocation mPvOrthoAlloc;
 
     @SuppressWarnings({ "FieldCanBeLocal" })
     private Allocation[] mTextures;
@@ -89,10 +93,11 @@ class GrassRS {
 
     private Allocation mBlades;
     private Allocation mBladesBuffer;
+    @SuppressWarnings({"FieldCanBeLocal"})
+    private SimpleMesh mBladesMesh;
 
     private int mTriangles;
     private final float[] mFloatData5 = new float[5];
-    private SimpleMesh mBladesMesh;
 
     public GrassRS(int width, int height) {
         mWidth = width;
@@ -288,14 +293,14 @@ class GrassRS {
         samplerBuilder.setMag(LINEAR);
         samplerBuilder.setWrapS(WRAP);
         samplerBuilder.setWrapT(WRAP);
-        Sampler sampler = samplerBuilder.create();
+        mSampler = samplerBuilder.create();
 
         ProgramFragment.Builder builder = new ProgramFragment.Builder(mRS, null, null);
         builder.setTexEnable(true, 0);
         builder.setTexEnvMode(REPLACE, 0);
         mPfBackground = builder.create();
         mPfBackground.setName("PFBackground");
-        mPfBackground.bindSampler(sampler, 0);
+        mPfBackground.bindSampler(mSampler, 0);
     }
 
     private void createProgramFragmentStore() {
@@ -309,13 +314,13 @@ class GrassRS {
     }
 
     private void createProgramVertex() {
-        ProgramVertex.MatrixAllocation pvOrthoAlloc = new ProgramVertex.MatrixAllocation(mRS);
-        pvOrthoAlloc.setupOrthoWindow(mWidth, mHeight);
+        mPvOrthoAlloc = new ProgramVertex.MatrixAllocation(mRS);
+        mPvOrthoAlloc.setupOrthoWindow(mWidth, mHeight);
 
         ProgramVertex.Builder pvb = new ProgramVertex.Builder(mRS, null, null);
         pvb.setTextureMatrixEnable(true);
         mPvBackground = pvb.create();
-        mPvBackground.bindAllocation(pvOrthoAlloc);
+        mPvBackground.bindAllocation(mPvOrthoAlloc);
         mPvBackground.setName("PVBackground");
     }
 }
