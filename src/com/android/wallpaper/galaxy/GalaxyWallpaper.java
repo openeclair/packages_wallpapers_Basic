@@ -39,18 +39,36 @@ public class GalaxyWallpaper extends WallpaperService {
         @Override
         public void onDestroy() {
             super.onDestroy();
+            destroyRenderer();
+        }
+
+        private void destroyRenderer() {
+            if (mRenderer != null) {
+                mRenderer.stop();
+                mRenderer = null;
+            }
         }
 
         @Override
         public void onVisibilityChanged(boolean visible) {
             super.onVisibilityChanged(visible);
+            if (visible) {
+                mRenderer.start();
+            } else {
+                mRenderer.stop();
+            }
         }
 
         @Override
         public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
             super.onSurfaceChanged(holder, format, width, height);
-            mRenderer = new GalaxyRS(width, height);
-            mRenderer.init(mRs, getResources());
+            if (mRenderer == null) {
+                mRenderer = new GalaxyRS(width, height);
+                mRenderer.init(mRs, getResources());
+                mRenderer.start();
+            } else {
+                mRenderer.resize(width, height);
+            }
         }
 
         @Override
@@ -72,6 +90,7 @@ public class GalaxyWallpaper extends WallpaperService {
         @Override
         public void onSurfaceDestroyed(SurfaceHolder holder) {
             super.onSurfaceDestroyed(holder);
+            destroyRenderer();
         }
     }
 }

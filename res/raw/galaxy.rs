@@ -37,10 +37,10 @@
 void drawSpace(float xOffset, int width, int height) {
     bindTexture(NAMED_PFBackground, 0, NAMED_TSpace);
     drawQuadTexCoords(
-            xOffset, 0.0f, 0.0f, 0.0f, 1.0f,
-            xOffset + width, 0.0f, 0.0f, 2.0f, 1.0f,
-            xOffset + width, height, 0.0f, 2.0f, 0.0f,
-            xOffset, height, 0.0f, 0.0f, 0.0f);
+            0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+            width, 0.0f, 0.0f, 2.0f, 1.0f,
+            width, height, 0.0f, 2.0f, 0.0f,
+            0.0f, height, 0.0f, 0.0f, 0.0f);
 }
 
 void drawLights(float xOffset, int width, int height) {

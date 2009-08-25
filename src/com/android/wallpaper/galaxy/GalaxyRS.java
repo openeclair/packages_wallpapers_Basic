@@ -72,8 +72,8 @@ class GalaxyRS {
 
     private final BitmapFactory.Options mOptionsARGB = new BitmapFactory.Options();
 
-    private final int mWidth;
-    private final int mHeight;
+    private int mWidth;
+    private int mHeight;
 
     @SuppressWarnings({"FieldCanBeLocal"})
     private ScriptC mScript;
@@ -120,6 +120,14 @@ class GalaxyRS {
         initRS();
     }
 
+    void stop() {
+        mRS.contextBindRootScript(null);
+    }
+
+    void start() {
+        mRS.contextBindRootScript(mScript);
+    }
+
     private void initRS() {
         createProgramVertex();
         createProgramFragmentStore();
@@ -133,14 +141,12 @@ class GalaxyRS {
         sb.setRoot(true);
 
         mScript = sb.create();
-        mScript.setClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        mScript.setClearColor(1.0f, 0.0f, 0.0f, 1.0f);
         mScript.setTimeZone(TimeZone.getDefault().getID());
 
         mScript.bindAllocation(mState, RSID_STATE);
         mScript.bindAllocation(mParticles, RSID_PARTICLES);
         mScript.bindAllocation(mParticlesBuffer, RSID_PARTICLES_BUFFER);
-
-        mRS.contextBindRootScript(mScript);
     }
 
     private void createScriptStructures() {
@@ -170,7 +176,18 @@ class GalaxyRS {
     void setOffsetX(float xOffset) {
         mGalaxyState.xOffset = xOffset;
         mState.data(mGalaxyState);
-    }    
+    }
+
+    void resize(int width, int height) {
+        mWidth = width;
+        mHeight = height;
+
+        mGalaxyState.width = width;
+        mGalaxyState.height = height;
+        mState.data(mGalaxyState);
+
+        mPvOrthoAlloc.setupOrthoWindow(mWidth, mHeight);
+    }
 
     static class GalaxyState {
         public int width;
@@ -344,8 +361,7 @@ class GalaxyRS {
 
     private void createProgramVertex() {
         mPvOrthoAlloc = new ProgramVertex.MatrixAllocation(mRS);
-        //mPvOrthoAlloc.setupProjectionNormalized(mWidth, mHeight);
-        mPvOrthoAlloc.setupOrthoWindow(mWidth, mHeight);        
+        mPvOrthoAlloc.setupOrthoWindow(mWidth, mHeight);
 
         ProgramVertex.Builder builder = new ProgramVertex.Builder(mRS, null, null);
         mPvBackground = builder.create();

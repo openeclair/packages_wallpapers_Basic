@@ -69,8 +69,8 @@ class GrassRS {
     private Resources mResources;
     private RenderScript mRS;
 
-    private final int mWidth;
-    private final int mHeight;
+    private int mWidth;
+    private int mHeight;
 
     @SuppressWarnings({ "FieldCanBeLocal" })
     private ScriptC mScript;
@@ -98,6 +98,7 @@ class GrassRS {
 
     private int mTriangles;
     private final float[] mFloatData5 = new float[5];
+    private WorldState mWorldState;
 
     public GrassRS(int width, int height) {
         mWidth = width;
@@ -109,7 +110,28 @@ class GrassRS {
         mResources = res;
         initRS();
     }
+    
+    void stop() {
+        mRS.contextBindRootScript(null);
+    }
 
+    void start() {
+        mRS.contextBindRootScript(mScript);
+    }
+
+    void resize(int width, int height) {
+        mWidth = width;
+        mHeight = height;
+
+        mWorldState.width = width;
+        mWorldState.height = height;
+        mState.data(mWorldState);
+
+        mPvOrthoAlloc.setupOrthoWindow(mWidth, mHeight);
+
+        // TODO: REPOSITION BLADES
+    }
+    
     private void initRS() {
         createProgramVertex();
         createProgramFragmentStore();
@@ -129,8 +151,6 @@ class GrassRS {
         mScript.bindAllocation(mState, RSID_STATE);
         mScript.bindAllocation(mBlades, RSID_BLADES);
         mScript.bindAllocation(mBladesBuffer, RSID_BLADES_BUFFER);
-
-        mRS.contextBindRootScript(mScript);
     }
 
     private void createScriptStructures() {
@@ -147,15 +167,15 @@ class GrassRS {
     }
 
     private void createState() {
-        WorldState state = new WorldState();
-        state.width = mWidth;
-        state.height = mHeight;
-        state.bladesCount = BLADES_COUNT;
-        state.trianglesCount = mTriangles;
+        mWorldState = new WorldState();
+        mWorldState.width = mWidth;
+        mWorldState.height = mHeight;
+        mWorldState.bladesCount = BLADES_COUNT;
+        mWorldState.trianglesCount = mTriangles;
 
         mStateType = Type.createFromClass(mRS, WorldState.class, 1, "WorldState");
         mState = Allocation.createTyped(mRS, mStateType);
-        mState.data(state);
+        mState.data(mWorldState);
     }
 
     private void createBlades() {
