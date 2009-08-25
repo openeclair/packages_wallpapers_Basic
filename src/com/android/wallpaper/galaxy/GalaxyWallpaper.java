@@ -84,7 +84,7 @@ public class GalaxyWallpaper extends WallpaperService {
             while (surface == null) {
                 surface = holder.getSurface();
             }
-            mRs = new RenderScript(surface);
+            mRs = new RenderScript(surface, false);
         }
 
         @Override
