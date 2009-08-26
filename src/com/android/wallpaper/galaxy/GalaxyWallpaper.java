@@ -47,6 +47,10 @@ public class GalaxyWallpaper extends WallpaperService {
                 mRenderer.stop();
                 mRenderer = null;
             }
+            if (mRs != null) {
+                mRs.destroy();
+                mRs = null;
+            }            
         }
 
         @Override
