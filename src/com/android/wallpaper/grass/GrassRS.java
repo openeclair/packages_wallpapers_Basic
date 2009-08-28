@@ -16,13 +16,11 @@
 
 package com.android.wallpaper.grass;
 
-import android.content.res.Resources;
 import android.renderscript.Sampler;
 import static android.renderscript.ProgramFragment.EnvMode.*;
 import static android.renderscript.ProgramStore.DepthFunc.*;
 import static android.renderscript.ProgramStore.BlendSrcFunc;
 import static android.renderscript.ProgramStore.BlendDstFunc;
-import android.renderscript.RenderScript;
 import android.renderscript.ProgramFragment;
 import android.renderscript.ProgramStore;
 import android.renderscript.Allocation;
@@ -37,10 +35,11 @@ import android.renderscript.SimpleMesh;
 import android.renderscript.Primitive;
 import static android.renderscript.Sampler.Value.*;
 import com.android.wallpaper.R;
+import com.android.wallpaper.RenderScriptScene;
 
 import java.util.TimeZone;
 
-class GrassRS {
+class GrassRS extends RenderScriptScene {
     private static final float TESSELATION = 0.5f;
     
     private static final int RSID_STATE = 0;
@@ -66,14 +65,6 @@ class GrassRS {
 
     private static final int RSID_BLADES_BUFFER = 2;
 
-    private Resources mResources;
-    private RenderScript mRS;
-
-    private int mWidth;
-    private int mHeight;
-
-    @SuppressWarnings({ "FieldCanBeLocal" })
-    private ScriptC mScript;
     @SuppressWarnings({ "FieldCanBeLocal" })
     private ProgramFragment mPfBackground;
     @SuppressWarnings({ "FieldCanBeLocal" })
@@ -100,39 +91,25 @@ class GrassRS {
     private final float[] mFloatData5 = new float[5];
     private WorldState mWorldState;
 
-    public GrassRS(int width, int height) {
-        mWidth = width;
-        mHeight = height;
+    GrassRS(int width, int height) {
+        super(width, height);
     }
 
-    public void init(RenderScript rs, Resources res) {
-        mRS = rs;
-        mResources = res;
-        initRS();
-    }
-    
-    void stop() {
-        mRS.contextBindRootScript(null);
-    }
-
-    void start() {
-        mRS.contextBindRootScript(mScript);
-    }
-
-    void resize(int width, int height) {
-        mWidth = width;
-        mHeight = height;
-
+    @Override
+    public void resize(int width, int height) {
+        super.resize(width, height);
+        
         mWorldState.width = width;
         mWorldState.height = height;
         mState.data(mWorldState);
 
         mPvOrthoAlloc.setupOrthoWindow(mWidth, mHeight);
 
-        // TODO: REPOSITION BLADES
+        // TODO: REPOSITION BLADES        
     }
-    
-    private void initRS() {
+
+    @Override
+    protected ScriptC createScript() {
         createProgramVertex();
         createProgramFragmentStore();
         createProgramFragment();
@@ -144,13 +121,15 @@ class GrassRS {
         sb.setScript(mResources, R.raw.grass);
         sb.setRoot(true);
 
-        mScript = sb.create();
-        mScript.setClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        mScript.setTimeZone(TimeZone.getDefault().getID());
+        ScriptC script = sb.create();
+        script.setClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        script.setTimeZone(TimeZone.getDefault().getID());
 
-        mScript.bindAllocation(mState, RSID_STATE);
-        mScript.bindAllocation(mBlades, RSID_BLADES);
-        mScript.bindAllocation(mBladesBuffer, RSID_BLADES_BUFFER);
+        script.bindAllocation(mState, RSID_STATE);
+        script.bindAllocation(mBlades, RSID_BLADES);
+        script.bindAllocation(mBladesBuffer, RSID_BLADES_BUFFER);
+        
+        return script;
     }
 
     private void createScriptStructures() {
@@ -158,12 +137,18 @@ class GrassRS {
         createState();
     }
 
+    @Override
+    public void setOffset(float xOffset, float yOffset, int xPixels, int yPixels) {
+        mWorldState.xOffset = xOffset;
+        mState.data(mWorldState);
+    }
+
     static class WorldState {
-        public int frameCount;
         public int bladesCount;
         public int trianglesCount;
         public int width;
         public int height;
+        public float xOffset;
     }
 
     private void createState() {
@@ -251,7 +236,7 @@ class GrassRS {
 
     private int createBlade(float[] blades, int index) {
         final float size = random(4.0f) + 4.0f;
-        final int xpos = random(mWidth);
+        final int xpos = random(-mWidth, mWidth);
 
         //noinspection PointlessArithmeticExpression
         blades[index + BLADE_STRUCT_ANGLE] = 0.0f;

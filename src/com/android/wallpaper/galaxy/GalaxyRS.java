@@ -16,8 +16,6 @@
 
 package com.android.wallpaper.galaxy;
 
-import android.content.res.Resources;
-import android.renderscript.RenderScript;
 import android.renderscript.ScriptC;
 import android.renderscript.ProgramFragment;
 import android.renderscript.ProgramStore;
@@ -43,8 +41,9 @@ import static android.util.MathUtils.*;
 import java.util.TimeZone;
 
 import com.android.wallpaper.R;
+import com.android.wallpaper.RenderScriptScene;
 
-class GalaxyRS {
+class GalaxyRS extends RenderScriptScene {
     private static final int GALAXY_RADIUS = 300;
     private static final int PARTICLES_COUNT = 12000;
     private static final float ELLIPSE_TWIST = 0.023333333f;
@@ -67,16 +66,8 @@ class GalaxyRS {
 
     private static final int RSID_PARTICLES_BUFFER = 2;
 
-    private Resources mResources;
-    private RenderScript mRS;
-
     private final BitmapFactory.Options mOptionsARGB = new BitmapFactory.Options();
 
-    private int mWidth;
-    private int mHeight;
-
-    @SuppressWarnings({"FieldCanBeLocal"})
-    private ScriptC mScript;
     @SuppressWarnings({"FieldCanBeLocal"})
     private ProgramFragment mPfBackground;
     @SuppressWarnings({"FieldCanBeLocal"})
@@ -107,28 +98,14 @@ class GalaxyRS {
 
     private final float[] mFloatData5 = new float[5];
 
-    public GalaxyRS(int width, int height) {
-        mWidth = width;
-        mHeight = height;
+    GalaxyRS(int width, int height) {
+        super(width, height);
         mOptionsARGB.inScaled = false;
         mOptionsARGB.inPreferredConfig = Bitmap.Config.ARGB_8888;
     }
 
-    public void init(RenderScript rs, Resources res) {
-        mRS = rs;
-        mResources = res;
-        initRS();
-    }
-
-    void stop() {
-        mRS.contextBindRootScript(null);
-    }
-
-    void start() {
-        mRS.contextBindRootScript(mScript);
-    }
-
-    private void initRS() {
+    @Override
+    protected ScriptC createScript() {
         createProgramVertex();
         createProgramFragmentStore();
         createProgramFragment();
@@ -140,13 +117,15 @@ class GalaxyRS {
         sb.setScript(mResources, R.raw.galaxy);
         sb.setRoot(true);
 
-        mScript = sb.create();
-        mScript.setClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-        mScript.setTimeZone(TimeZone.getDefault().getID());
+        ScriptC script = sb.create();
+        script.setClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+        script.setTimeZone(TimeZone.getDefault().getID());
 
-        mScript.bindAllocation(mState, RSID_STATE);
-        mScript.bindAllocation(mParticles, RSID_PARTICLES);
-        mScript.bindAllocation(mParticlesBuffer, RSID_PARTICLES_BUFFER);
+        script.bindAllocation(mState, RSID_STATE);
+        script.bindAllocation(mParticles, RSID_PARTICLES);
+        script.bindAllocation(mParticlesBuffer, RSID_PARTICLES_BUFFER);
+        
+        return script;
     }
 
     private void createScriptStructures() {
@@ -173,14 +152,15 @@ class GalaxyRS {
         mParticlesMesh.bindVertexAllocation(mParticlesBuffer, 0);
     }
 
-    void setOffsetX(float xOffset) {
+    @Override
+    public void setOffset(float xOffset, float yOffset, int xPixels, int yPixels) {
         mGalaxyState.xOffset = xOffset;
         mState.data(mGalaxyState);
     }
 
-    void resize(int width, int height) {
-        mWidth = width;
-        mHeight = height;
+    @Override
+    public void resize(int width, int height) {
+        super.resize(width, height);
 
         mGalaxyState.width = width;
         mGalaxyState.height = height;

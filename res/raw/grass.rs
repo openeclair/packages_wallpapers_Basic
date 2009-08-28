@@ -53,11 +53,12 @@
 
 #define REAL_TIME 0
 
-float time(int frameCount) {
+float time() {
     if (REAL_TIME) {
         return (hour() * 3600.0f + minute() * 60.0f + second()) / SECONDS_IN_DAY;
     }
-    return (frameCount % 180) / 180.0f;
+    float t = uptimeMillis() / 20000.0f;
+    return t - (int) t;
 }
 
 void alpha(float a) {
@@ -92,14 +93,14 @@ void drawSunset(int width, int height) {
     drawRect(0.0f, 0.0f, width, height, 0.0f);
 }
 
-int drawBlade(float *bladeStruct, float *bladeBuffer, int *bladeColor, float now, int frameCount) {
+int drawBlade(float *bladeStruct, float *bladeBuffer, int *bladeColor, float now, float xOffset) {
     float offset = bladeStruct[BLADE_STRUCT_OFFSET];
     float scale = bladeStruct[BLADE_STRUCT_SCALE];
     float angle = bladeStruct[BLADE_STRUCT_ANGLE];
     float hardness = bladeStruct[BLADE_STRUCT_HARDNESS];
     float turbulenceX = bladeStruct[BLADE_STRUCT_TURBULENCEX];
 
-    float xpos = bladeStruct[BLADE_STRUCT_XPOS];
+    float xpos = bladeStruct[BLADE_STRUCT_XPOS] + xOffset;
     float ypos = bladeStruct[BLADE_STRUCT_YPOS];
 
     float lengthX = bladeStruct[BLADE_STRUCT_LENGTHX];
@@ -126,7 +127,7 @@ int drawBlade(float *bladeStruct, float *bladeBuffer, int *bladeColor, float now
 
     int color = hsbToAbgr(h, s, lerpf(0, b, newB), 1.0f);
 
-    float newAngle = turbulencef2(turbulenceX, frameCount * 0.006f, 4.0f) - 0.5f;
+    float newAngle = turbulencef2(turbulenceX, uptimeMillis() * 0.00004f, 4.0f) - 0.5f;
     newAngle *= 0.5f;
     angle = clampf(angle + (newAngle + offset - angle) * 0.15f, -MAX_BEND, MAX_BEND);
 
@@ -202,7 +203,7 @@ int drawBlade(float *bladeStruct, float *bladeBuffer, int *bladeColor, float now
     return triangles * 15;
 }
 
-void drawBlades(float now, int frameCount) {
+void drawBlades(float now, float xOffset) {
     // For anti-aliasing
     bindTexture(NAMED_PFBackground, 0, NAMED_TAa);
 
@@ -215,7 +216,7 @@ void drawBlades(float now, int frameCount) {
     int *bladeColor = loadArrayI32(RSID_BLADES_BUFFER, 0);
 
     for ( ; i < bladesCount; i += 1) {
-        int offset = drawBlade(bladeStruct, bladeBuffer, bladeColor, now, frameCount);
+        int offset = drawBlade(bladeStruct, bladeBuffer, bladeColor, now, xOffset);
         bladeBuffer += offset;
         bladeColor += offset;
         bladeStruct += BLADE_STRUCT_FIELDS_COUNT;
@@ -229,8 +230,9 @@ int main(int launchID) {
     int width = State_width;
     int height = State_height;
 
-    int frameCount = State_frameCount;
-    float now = time(frameCount);
+    float x = lerpf(width, 0, State_xOffset);
+
+    float now = time();
     alpha(1.0f);
 
     if (now >= MIDNIGHT && now < MORNING) {
@@ -251,10 +253,7 @@ int main(int launchID) {
         drawSunset(width, height);
     }
 
-    drawBlades(now, frameCount);
-
-    frameCount++;
-    storeI32(RSID_STATE, OFFSETOF_WorldState_frameCount, frameCount);
+    drawBlades(now, x);
 
     return 1;
 }
