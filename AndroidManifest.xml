@@ -25,6 +25,30 @@
         android:label="@string/wallpapers"
         android:icon="@drawable/ic_launcher_wallpaper">
 
+        <activity
+            android:label="@string/wallpaper_grass"
+            android:name="com.android.wallpaper.grass.Grass"
+            android:theme="@android:style/Theme.NoTitleBar">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+        
+        <activity
+            android:label="@string/wallpaper_galaxy"
+            android:name="com.android.wallpaper.galaxy.Galaxy"
+            android:theme="@android:style/Theme.NoTitleBar">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+        
         <service
             android:label="@string/wallpaper_grass"
             android:name="com.android.wallpaper.grass.GrassWallpaper"
