@@ -118,7 +118,7 @@ class GalaxyRS extends RenderScriptScene {
         sb.setRoot(true);
 
         ScriptC script = sb.create();
-        script.setClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+        script.setClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         script.setTimeZone(TimeZone.getDefault().getID());
 
         script.bindAllocation(mState, RSID_STATE);
