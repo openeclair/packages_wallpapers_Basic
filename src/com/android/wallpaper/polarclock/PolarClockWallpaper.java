@@ -30,6 +30,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.text.format.Time;
+import android.util.Log;
 import android.util.MathUtils;
 
 import java.util.TimeZone;
@@ -80,13 +81,13 @@ public class PolarClockWallpaper extends WallpaperService {
             public void onReceive(Context context, Intent intent) {
                 final String timeZone = intent.getStringExtra("time-zone");
                 mCalendar = new Time(TimeZone.getTimeZone(timeZone).getID());
-                drawFrame(true);
+                drawFrame();
             }
         };
         
         private final Runnable mDrawClock = new Runnable() {
             public void run() {
-                drawFrame(true);
+                drawFrame();
             }
         };
         private boolean mVisible;
@@ -145,13 +146,13 @@ public class PolarClockWallpaper extends WallpaperService {
                 }
                 mHandler.removeCallbacks(mDrawClock);
             }
-            drawFrame(visible);
+            drawFrame();
         }
 
         @Override
         public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
             super.onSurfaceChanged(holder, format, width, height);
-            drawFrame(true);
+            drawFrame();
         }
 
         @Override
@@ -162,16 +163,17 @@ public class PolarClockWallpaper extends WallpaperService {
         @Override
         public void onSurfaceDestroyed(SurfaceHolder holder) {
             super.onSurfaceDestroyed(holder);
-            drawFrame(false);
+            mVisible = false;
+            mHandler.removeCallbacks(mDrawClock);
         }
 
         @Override
         public void onOffsetsChanged(float xOffset, float yOffset, int xPixels, int yPixels) {
             mOffsetX = xOffset;
-            drawFrame(mVisible);
+            drawFrame();
         }
         
-        void drawFrame(boolean redraw) {
+        void drawFrame() {
             final SurfaceHolder holder = getSurfaceHolder();
             final Rect frame = holder.getSurfaceFrame();
             final int width = frame.width();
@@ -204,6 +206,7 @@ public class PolarClockWallpaper extends WallpaperService {
                     rect.set(-size, -size, size, size);
 
                     float angle = ((mStartTime + SystemClock.elapsedRealtime()) % 60000) / 60000.0f;
+                    if (angle < 0) angle = -angle;
                     paint.setColor(colors[((int) (angle * COLORS_CACHE_COUNT))]);
                     c.drawArc(rect, 0.0f, angle * 360.0f, false, paint);
 
@@ -245,7 +248,7 @@ public class PolarClockWallpaper extends WallpaperService {
             }
 
             mHandler.removeCallbacks(mDrawClock);
-            if (redraw) {
+            if (mVisible) {
                 mHandler.postDelayed(mDrawClock, 1000 / 25);
             }
         }
