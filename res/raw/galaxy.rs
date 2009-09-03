@@ -17,21 +17,6 @@
 #pragma stateFragment(PFBackground)
 #pragma stateFragmentStore(PFSBackground)
 
-#define RSID_PARTICLES 1
-
-#define PARTICLE_STRUCT_FIELDS_COUNT 6
-#define PARTICLE_STRUCT_ANGLE 0
-#define PARTICLE_STRUCT_DISTANCE 1
-#define PARTICLE_STRUCT_SPEED 2
-#define PARTICLE_STRUCT_RADIUS 3
-#define PARTICLE_STRUCT_S 4
-#define PARTICLE_STRUCT_T 5
-
-#define RSID_PARTICLES_BUFFER 2
-#define PARTICLE_BUFFER_COMPONENTS_COUNT 5
-
-#define PARTICLES_TEXTURES_COUNT 2
-
 #define ELLIPSE_RATIO 0.892f
 
 void drawSpace(float xOffset, int width, int height) {
@@ -46,7 +31,7 @@ void drawSpace(float xOffset, int width, int height) {
 void drawLights(float xOffset, int width, int height) {
     float x = (width - 512.0f) * 0.5f + xOffset;
     float y = (height - 512.0f) * 0.5f;
-    
+
     // increase the size of the texture by 5% on each side
     x -= 512.0f * 0.05f;
 
@@ -58,72 +43,44 @@ void drawLights(float xOffset, int width, int height) {
              x + 512.0f * 1.1f, y + 512.0f, 0.0f);
 }
 
-void drawParticle(float *particle, float *particleBuffer, float w, float h) {
-    float distance = particle[PARTICLE_STRUCT_DISTANCE];
-    float angle = particle[PARTICLE_STRUCT_ANGLE];
-    float speed = particle[PARTICLE_STRUCT_SPEED];
-    float r = particle[PARTICLE_STRUCT_RADIUS];
-
-    float a = angle + speed;
-    float x = distance * sinf_fast(a);
-    float y = distance * cosf_fast(a) * ELLIPSE_RATIO;
-    float s = particle[PARTICLE_STRUCT_S];
-    float t = particle[PARTICLE_STRUCT_T];
-
-    float sX = t * x + s * y + w;
-    float sY = s * x - t * y + h;
-
-    // lower left vertex of the particle's triangle
-    particleBuffer[1] = sX - r;     // X
-    particleBuffer[2] = sY + r;     // Y
-
-    // lower right vertex of the particle's triangle
-    particleBuffer[6] = sX + r;     // X
-    particleBuffer[7] = sY + r;     // Y
-
-    // upper middle vertex of the particle's triangle
-    particleBuffer[11] = sX;         // X
-    particleBuffer[12] = sY - r;     // Y
-
-    particle[PARTICLE_STRUCT_ANGLE] = a;
-}
-
 void drawParticles(float xOffset, int width, int height) {
-    bindProgramFragment(NAMED_PFLighting);
-    bindProgramFragmentStore(NAMED_PFSLights);    
-    bindTexture(NAMED_PFLighting, 0, NAMED_TFlares);
+    bindProgramFragment(NAMED_PFBasic);
+    bindProgramFragmentStore(NAMED_PFSLights);
 
-    int radius = State_galaxyRadius;
-    int particlesCount = State_particlesCount;
-
-    float *particle = loadArrayF(RSID_PARTICLES, 0);
-    float *particleBuffer = loadArrayF(RSID_PARTICLES_BUFFER, 0);
+    int radius = State->galaxyRadius;
+    int particlesCount = State->particlesCount;
 
     float w = width * 0.5f + xOffset;
     float h = height * 0.5f;
 
     int i = 0;
+    struct Stars_s *star = Stars;
+    struct Parts_s *vtx = Parts;
     for ( ; i < particlesCount; i++) {
-        drawParticle(particle, particleBuffer, w, h);
-        particle += PARTICLE_STRUCT_FIELDS_COUNT;
-        // each particle is a triangle (3 vertices) of 5 properties (ABGR, X, Y, S, T)
-        particleBuffer += 3 * PARTICLE_BUFFER_COMPONENTS_COUNT;
+        float a = star->angle + star->speed;
+        float x = star->distance * sinf(a);
+        float y = star->distance * cosf(a) * ELLIPSE_RATIO;
+
+        vtx->x = star->t * x + star->s * y + w;
+        vtx->y = star->s * x - star->t * y + h;
+        star->angle = a;
+        star ++;
+        vtx ++;
     }
 
     uploadToBufferObject(NAMED_ParticlesBuffer);
-    drawSimpleMeshRange(NAMED_ParticlesMesh, 0, particlesCount * 3);
+    drawSimpleMeshRange(NAMED_ParticlesMesh, 0, particlesCount);
 }
 
 int main(int index) {
-    int width = State_width;
-    int height = State_height;
-   
+    int width = State->width;
+    int height = State->height;
+
     float w = width * 0.5f;
-    float x = lerpf(w, -w, State_xOffset);
+    float x = lerpf(w, -w, State->xOffset);
 
     drawSpace(x, width, height);
     drawParticles(x, width, height);
     drawLights(x, width, height);
-
     return 1;
 }

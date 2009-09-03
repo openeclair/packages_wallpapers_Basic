@@ -207,8 +207,8 @@ void drawBlades(float now, float xOffset) {
     // For anti-aliasing
     bindTexture(NAMED_PFBackground, 0, NAMED_TAa);
 
-    int bladesCount = State_bladesCount;
-    int trianglesCount = State_trianglesCount;
+    int bladesCount = State->bladesCount;
+    int trianglesCount = State->trianglesCount;
 
     int i = 0;
     float *bladeStruct = loadArrayF(RSID_BLADES, 0);
@@ -227,10 +227,10 @@ void drawBlades(float now, float xOffset) {
 }
 
 int main(int launchID) {
-    int width = State_width;
-    int height = State_height;
+    int width = State->width;
+    int height = State->height;
 
-    float x = lerpf(width, 0, State_xOffset);
+    float x = lerpf(width, 0, State->xOffset);
 
     float now = time();
     alpha(1.0f);

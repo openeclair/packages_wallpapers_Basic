@@ -26,7 +26,6 @@ import android.renderscript.Element;
 import android.renderscript.SimpleMesh;
 import android.renderscript.Primitive;
 import android.renderscript.Type;
-import static android.renderscript.Sampler.Value.LINEAR;
 import static android.renderscript.Sampler.Value.NEAREST;
 import static android.renderscript.Sampler.Value.WRAP;
 import static android.renderscript.ProgramStore.DepthFunc.*;
@@ -49,29 +48,20 @@ class GalaxyRS extends RenderScriptScene {
     private static final float ELLIPSE_TWIST = 0.023333333f;
 
     private static final int RSID_STATE = 0;
+    private static final int RSID_PARTICLES = 1;
+    private static final int RSID_PARTICLES_BUFFER = 2;
 
-    private static final int TEXTURES_COUNT = 3;
+    private static final int TEXTURES_COUNT = 2;
     private static final int RSID_TEXTURE_SPACE = 0;
     private static final int RSID_TEXTURE_LIGHT1 = 1;
-    private static final int RSID_TEXTURE_FLARES = 2;
 
-    private static final int RSID_PARTICLES = 1;
-    private static final int PARTICLE_STRUCT_FIELDS_COUNT = 6;
-    private static final int PARTICLE_STRUCT_ANGLE = 0;
-    private static final int PARTICLE_STRUCT_DISTANCE = 1;
-    private static final int PARTICLE_STRUCT_SPEED = 2;
-    private static final int PARTICLE_STRUCT_RADIUS = 3;
-    private static final int PARTICLE_STRUCT_S = 4;
-    private static final int PARTICLE_STRUCT_T = 5;
-
-    private static final int RSID_PARTICLES_BUFFER = 2;
 
     private final BitmapFactory.Options mOptionsARGB = new BitmapFactory.Options();
 
     @SuppressWarnings({"FieldCanBeLocal"})
     private ProgramFragment mPfBackground;
     @SuppressWarnings({"FieldCanBeLocal"})
-    private ProgramFragment mPfLighting;
+    private ProgramFragment mPfBasic;
     @SuppressWarnings({"FieldCanBeLocal"})
     private ProgramStore mPfsBackground;
     @SuppressWarnings({"FieldCanBeLocal"})
@@ -81,10 +71,7 @@ class GalaxyRS extends RenderScriptScene {
     @SuppressWarnings({"FieldCanBeLocal"})
     private Sampler mSampler;
     @SuppressWarnings({"FieldCanBeLocal"})
-    private Sampler mLightSampler;
-    @SuppressWarnings({"FieldCanBeLocal"})
     private ProgramVertex.MatrixAllocation mPvOrthoAlloc;
-
     @SuppressWarnings({"FieldCanBeLocal"})
     private Allocation[] mTextures;
 
@@ -92,11 +79,12 @@ class GalaxyRS extends RenderScriptScene {
     private Type mStateType;
     private Allocation mState;
     private Allocation mParticles;
+    private Type mParticlesType;
     private Allocation mParticlesBuffer;
     @SuppressWarnings({"FieldCanBeLocal"})
     private SimpleMesh mParticlesMesh;
 
-    private final float[] mFloatData5 = new float[5];
+    private final float[] mFloatData3 = new float[4];
 
     GalaxyRS(int width, int height) {
         super(width, height);
@@ -114,6 +102,8 @@ class GalaxyRS extends RenderScriptScene {
 
         ScriptC.Builder sb = new ScriptC.Builder(mRS);
         sb.setType(mStateType, "State", RSID_STATE);
+        sb.setType(mParticlesMesh.getVertexType(0), "Parts", RSID_PARTICLES_BUFFER);
+        sb.setType(mParticlesType, "Stars", RSID_PARTICLES);
         sb.setScript(mResources, R.raw.galaxy);
         sb.setRoot(true);
 
@@ -124,7 +114,7 @@ class GalaxyRS extends RenderScriptScene {
         script.bindAllocation(mState, RSID_STATE);
         script.bindAllocation(mParticles, RSID_PARTICLES);
         script.bindAllocation(mParticlesBuffer, RSID_PARTICLES_BUFFER);
-        
+
         return script;
     }
 
@@ -136,14 +126,14 @@ class GalaxyRS extends RenderScriptScene {
 
     private void createParticlesMesh() {
         final Builder elementBuilder = new Builder(mRS);
-        elementBuilder.addUNorm8RGBA();
-        elementBuilder.addFloatXY();
-        elementBuilder.addFloatST();
+        elementBuilder.addUNorm8RGBA("");
+        elementBuilder.addFloatXY("");
+        elementBuilder.addFloatPointSize("PS");
         final Element vertexElement = elementBuilder.create();
 
         final SimpleMesh.Builder meshBuilder = new SimpleMesh.Builder(mRS);
-        final int vertexSlot = meshBuilder.addVertexType(vertexElement, PARTICLES_COUNT * 3);
-        meshBuilder.setPrimitive(Primitive.TRIANGLE);
+        final int vertexSlot = meshBuilder.addVertexType(vertexElement, PARTICLES_COUNT);
+        meshBuilder.setPrimitive(Primitive.POINT);
         mParticlesMesh = meshBuilder.create();
         mParticlesMesh.setName("ParticlesMesh");
 
@@ -177,6 +167,14 @@ class GalaxyRS extends RenderScriptScene {
         public float xOffset;
     }
 
+    static class GalaxyParticle {
+        public float angle;
+        public float distance;
+        public float speed;
+        public float s;
+        public float t;
+    }
+
     private void createState() {
         mGalaxyState = new GalaxyState();
         mGalaxyState.width = mWidth;
@@ -190,34 +188,28 @@ class GalaxyRS extends RenderScriptScene {
     }
 
     private void createParticles() {
-        final float[] particles = new float[PARTICLES_COUNT * PARTICLE_STRUCT_FIELDS_COUNT];
+        GalaxyParticle gp = new GalaxyParticle();
+        mParticlesType = Type.createFromClass(mRS, GalaxyParticle.class, PARTICLES_COUNT, "Particle");
+        mParticles = Allocation.createTyped(mRS, mParticlesType);
 
-        int bufferIndex = 0;
-
-        for (int i = 0; i < particles.length; i += PARTICLE_STRUCT_FIELDS_COUNT) {
-            createParticle(particles, i, bufferIndex);
-            bufferIndex += 3;            
+        for (int i = 0; i < PARTICLES_COUNT; i ++) {
+            createParticle(gp, i);
         }
-
-        mParticles = Allocation.createSized(mRS, USER_FLOAT, particles.length);
-        mParticles.data(particles);
     }
 
     @SuppressWarnings({"PointlessArithmeticExpression"})
-    private void createParticle(float[] particles, int index, int bufferIndex) {
+    private void createParticle(GalaxyParticle gp, int index) {
         float d = abs(randomGauss()) * GALAXY_RADIUS / 2.0f + random(-4.0f, 4.0f);
-        float z = randomGauss() * 0.5f * 0.8f * ((GALAXY_RADIUS - d) / (float) GALAXY_RADIUS);
-        z += 1.0f;
+        //float z = randomGauss() * 0.5f * 0.8f * ((GALAXY_RADIUS - d) / (float) GALAXY_RADIUS);
+        //z += 1.0f;
         float p = d * ELLIPSE_TWIST;
 
-        particles[index + PARTICLE_STRUCT_ANGLE] = random(0.0f, (float) (Math.PI * 2.0));
-        particles[index + PARTICLE_STRUCT_DISTANCE] = d;
-        particles[index + PARTICLE_STRUCT_SPEED] = random(0.0015f, 0.0025f) *
-                (0.5f + (0.5f * (float) GALAXY_RADIUS / d)) * 0.7f;
-        particles[index + PARTICLE_STRUCT_RADIUS] = z * random(1.2f, 2.1f);
-        particles[index + PARTICLE_STRUCT_S] = (float) Math.cos(p);
-        particles[index + PARTICLE_STRUCT_T] = (float) Math.sin(p);
-        
+        gp.angle = random(0.0f, (float) (Math.PI * 2.0));
+        gp.distance = d;
+        gp.speed = random(0.0015f, 0.0025f) * (0.5f + (0.5f * (float) GALAXY_RADIUS / d)) * 0.7f;
+        gp.s = (float) Math.cos(p);
+        gp.t = (float) Math.sin(p);
+
         int red, green, blue;
         if (d < GALAXY_RADIUS / 3.0f) {
             red = (int) (220 + (d / (float) GALAXY_RADIUS) * 35);
@@ -228,26 +220,15 @@ class GalaxyRS extends RenderScriptScene {
             green = 180;
             blue = (int) constrain(140 + (d / (float) GALAXY_RADIUS) * 115, 140, 255);
         }
-        
+
         final int color = red | green << 8 | blue << 16 | 0xff000000;
 
-        final float[] floatData = mFloatData5;
-        final Allocation buffer = mParticlesBuffer;
-        
+        final float[] floatData = mFloatData3;
+
         floatData[0] = Float.intBitsToFloat(color);
-        floatData[3] = 0.0f;
-        floatData[4] = 1.0f;
-        buffer.subData1D(bufferIndex, 1, floatData);
-
-        bufferIndex++;
-        floatData[3] = 1.0f;
-        floatData[4] = 1.0f;
-        buffer.subData1D(bufferIndex, 1, floatData);
-
-        bufferIndex++;
-        floatData[3] = 0.5f;
-        floatData[4] = 0.0f;
-        buffer.subData1D(bufferIndex, 1, floatData);
+        floatData[3] = random(0.5f, 1.5f);
+        mParticlesBuffer.subData1D(index, 1, floatData);
+        mParticles.subData(index, gp);
     }
 
     private static float randomGauss() {
@@ -264,14 +245,13 @@ class GalaxyRS extends RenderScriptScene {
         w = (float) Math.sqrt(-2.0 * log(w) / w);
         return x1 * w;
     }
-    
+
     private void loadTextures() {
         mTextures = new Allocation[TEXTURES_COUNT];
 
         final Allocation[] textures = mTextures;
         textures[RSID_TEXTURE_SPACE] = loadTexture(R.drawable.space, "TSpace");
         textures[RSID_TEXTURE_LIGHT1] = loadTextureARGB(R.drawable.light1, "TLight1");
-        textures[RSID_TEXTURE_FLARES] = loadTextureARGB(R.drawable.flares, "TFlares");
 
         final int count = textures.length;
         for (int i = 0; i < count; i++) {
@@ -291,12 +271,12 @@ class GalaxyRS extends RenderScriptScene {
         final Allocation allocation = Allocation.createFromBitmap(mRS, b, RGBA_8888, false);
         allocation.setName(name);
         return allocation;
-    }    
+    }
 
     private void createProgramFragment() {
         Sampler.Builder sampleBuilder = new Sampler.Builder(mRS);
-        sampleBuilder.setMin(LINEAR);
-        sampleBuilder.setMag(LINEAR);
+        sampleBuilder.setMin(NEAREST);
+        sampleBuilder.setMag(NEAREST);
         sampleBuilder.setWrapS(WRAP);
         sampleBuilder.setWrapT(WRAP);
         mSampler = sampleBuilder.create();
@@ -308,19 +288,9 @@ class GalaxyRS extends RenderScriptScene {
         mPfBackground.setName("PFBackground");
         mPfBackground.bindSampler(mSampler, 0);
 
-        sampleBuilder = new Sampler.Builder(mRS);
-        sampleBuilder.setMin(NEAREST);
-        sampleBuilder.setMag(NEAREST);
-        sampleBuilder.setWrapS(WRAP);
-        sampleBuilder.setWrapT(WRAP);
-        mLightSampler = sampleBuilder.create();
-
         builder = new ProgramFragment.Builder(mRS, null, null);
-        builder.setTexEnable(true, 0);
-        builder.setTexEnvMode(MODULATE, 0);
-        mPfLighting = builder.create();
-        mPfLighting.setName("PFLighting");
-        mPfLighting.bindSampler(mLightSampler, 0);
+        mPfBasic = builder.create();
+        mPfBasic.setName("PFBasic");
     }
 
     private void createProgramFragmentStore() {
@@ -330,7 +300,7 @@ class GalaxyRS extends RenderScriptScene {
         builder.setDitherEnable(false);
         mPfsBackground = builder.create();
         mPfsBackground.setName("PFSBackground");
-        
+
         builder = new ProgramStore.Builder(mRS, null, null);
         builder.setDepthFunc(ALWAYS);
         builder.setBlendFunc(BlendSrcFunc.ONE, BlendDstFunc.ONE);
