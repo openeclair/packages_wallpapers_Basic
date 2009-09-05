@@ -19,6 +19,14 @@
 
 #define ELLIPSE_RATIO 0.892f
 
+float angle;
+float distance;
+
+void init() {
+    angle = 0.0f;
+    distance = 0.0f;
+}
+
 void drawSpace(float xOffset, int width, int height) {
     bindTexture(NAMED_PFBackground, 0, NAMED_TSpace);
     drawQuadTexCoords(
@@ -29,43 +37,56 @@ void drawSpace(float xOffset, int width, int height) {
 }
 
 void drawLights(float xOffset, int width, int height) {
-    float x = (width - 512.0f) * 0.5f + xOffset;
-    float y = (height - 512.0f) * 0.5f;
-
-    // increase the size of the texture by 5% on each side
-    x -= 512.0f * 0.05f;
-
+    bindProgramVertex(NAMED_PVStars);
     bindProgramFragment(NAMED_PFBackground);
     bindTexture(NAMED_PFBackground, 0, NAMED_TLight1);
-    drawQuad(x + 512.0f * 1.1f, y         , 0.0f,
-             x                , y         , 0.0f,
-             x                , y + 512.0f, 0.0f,
-             x + 512.0f * 1.1f, y + 512.0f, 0.0f);
+
+    float scale = 512.0f / width;
+    float x = -scale + xOffset - scale * 0.05f;
+    float y = -scale;
+
+    scale *= 2.0f;
+
+    drawQuad(x, y, 0.0f,
+             x + scale * 1.1f, y, 0.0f,
+             x + scale * 1.1f, y + scale, 0.0f,
+             x, y + scale, 0.0f);
 }
 
 void drawParticles(float xOffset, int width, int height) {
-    bindProgramFragment(NAMED_PFBasic);
+    bindProgramVertex(NAMED_PVStars);
+    bindProgramFragment(NAMED_PFStars);
     bindProgramFragmentStore(NAMED_PFSLights);
+    bindTexture(NAMED_PFStars, 0, NAMED_TFlares);
+
+    float matrix[16];
+    matrixLoadTranslate(matrix, 0.0f, 0.0f, 10.0f - 6.0f * distance);
+    matrixScale(matrix, 6.15f, 6.0f, 1.0f);
+    matrixRotate(matrix, angle, 1.0f, 0.5f, 0.0f);
+    vpLoadModelMatrix(matrix);
+
+    // quadratic attenuation
+    pointAttenuation(0.1f, 0.0f, 0.06f);
 
     int radius = State->galaxyRadius;
     int particlesCount = State->particlesCount;
 
-    float w = width * 0.5f + xOffset;
-    float h = height * 0.5f;
+    float w = xOffset;
+
+    struct Stars_s *star = Stars;
+    struct Particles_s *vtx = Particles;
 
     int i = 0;
-    struct Stars_s *star = Stars;
-    struct Parts_s *vtx = Parts;
     for ( ; i < particlesCount; i++) {
         float a = star->angle + star->speed;
         float x = star->distance * sinf(a);
         float y = star->distance * cosf(a) * ELLIPSE_RATIO;
 
         vtx->x = star->t * x + star->s * y + w;
-        vtx->y = star->s * x - star->t * y + h;
+        vtx->y = star->s * x - star->t * y;
         star->angle = a;
-        star ++;
-        vtx ++;
+        star++;
+        vtx++;
     }
 
     uploadToBufferObject(NAMED_ParticlesBuffer);
@@ -76,11 +97,16 @@ int main(int index) {
     int width = State->width;
     int height = State->height;
 
-    float w = width * 0.5f;
-    float x = lerpf(w, -w, State->xOffset);
+    float x = lerpf(1.0f, -1.0f, State->xOffset);
 
     drawSpace(x, width, height);
     drawParticles(x, width, height);
     drawLights(x, width, height);
+
+//    if (angle < 68.0f) {
+//        angle += 0.4f;
+//        distance = angle / 68.0f;
+//    }
+
     return 1;
 }
