@@ -28,8 +28,14 @@
     
     <!-- Wallpaper showing grass and the sky -->
     <string name="wallpaper_grass">Grass</string>
+    
     <!-- Wallpaper showing a galaxy -->
     <string name="wallpaper_galaxy">Galaxy</string>
+    
     <!-- Wallpaper showing a clock -->
     <string name="wallpaper_clock">Polar clock</string>
+    <!-- Polar clock: title of settings activity -->
+    <string name="clock_settings">Polar clock settings</string>
+    <!-- Polar clock: label for "show seconds" pref -->
+    <string name="show_seconds">Show seconds</string>
 </resources>

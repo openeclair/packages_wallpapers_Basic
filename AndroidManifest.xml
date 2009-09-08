@@ -56,6 +56,7 @@
             <intent-filter>
                 <action android:name="android.service.wallpaper.WallpaperService" />
             </intent-filter>
+            <meta-data android:name="android.service.wallpaper" android:resource="@xml/grass" />
         </service>
 
         <service
@@ -65,8 +66,16 @@
             <intent-filter>
                 <action android:name="android.service.wallpaper.WallpaperService" />
             </intent-filter>
+            <meta-data android:name="android.service.wallpaper" android:resource="@xml/galaxy" />
         </service>
 
+        <activity
+            android:label="@string/clock_settings"
+            android:name="com.android.wallpaper.polarclock.PolarClockSettings"
+            android:theme="@android:style/Theme.Wallpaper"
+            android:exported="true">
+        </activity>
+        
         <service
             android:label="@string/wallpaper_clock"
             android:name="com.android.wallpaper.polarclock.PolarClockWallpaper"
@@ -74,6 +83,7 @@
             <intent-filter>
                 <action android:name="android.service.wallpaper.WallpaperService" />
             </intent-filter>
+            <meta-data android:name="android.service.wallpaper" android:resource="@xml/polar_clock" />
         </service>
 
     </application>

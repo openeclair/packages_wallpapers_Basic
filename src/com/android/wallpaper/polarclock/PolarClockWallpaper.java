@@ -27,15 +27,18 @@ import android.content.IntentFilter;
 import android.content.Intent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.text.format.Time;
-import android.util.Log;
 import android.util.MathUtils;
 
 import java.util.TimeZone;
 
 public class PolarClockWallpaper extends WallpaperService {
+    public static final String SHARED_PREFS_NAME = "polar_clock_settings";
+    public static final String PREF_SHOW_SECONDS = "show_seconds";
+    
     private final Handler mHandler = new Handler();
 
     private IntentFilter mFilter;
@@ -57,7 +60,8 @@ public class PolarClockWallpaper extends WallpaperService {
         return new ClockEngine();
     }
 
-    class ClockEngine extends Engine {
+    class ClockEngine extends Engine
+            implements SharedPreferences.OnSharedPreferenceChangeListener {
         private static final float SATURATION = 0.8f;
         private static final float BRIGHTNESS = 0.9f;
 
@@ -66,6 +70,9 @@ public class PolarClockWallpaper extends WallpaperService {
         private static final float LARGE_GAP = 38.0f;
 
         private static final int COLORS_CACHE_COUNT = 720;
+        
+        private SharedPreferences mPrefs;
+        private boolean mShowSeconds;
         
         private boolean mWatcherRegistered;
         private float mStartTime;
@@ -105,7 +112,10 @@ public class PolarClockWallpaper extends WallpaperService {
         @Override
         public void onCreate(SurfaceHolder surfaceHolder) {
             super.onCreate(surfaceHolder);
-            surfaceHolder.setSizeFromLayout();
+            
+            mPrefs = PolarClockWallpaper.this.getSharedPreferences(SHARED_PREFS_NAME, 0);
+            mPrefs.registerOnSharedPreferenceChangeListener(this);
+            onSharedPreferenceChanged(mPrefs, null);
 
             mCalendar = new Time();
             mCalendar.setToNow();
@@ -126,6 +136,16 @@ public class PolarClockWallpaper extends WallpaperService {
                 unregisterReceiver(mWatcher);
             }
             mHandler.removeCallbacks(mDrawClock);
+        }
+
+        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
+                String key) {
+            if (key == null || PREF_SHOW_SECONDS.equals(key)) {
+                mShowSeconds = sharedPreferences.getBoolean(PREF_SHOW_SECONDS, true);
+                if (mVisible) {
+                    drawFrame();
+                }
+            }
         }
 
         @Override
@@ -200,15 +220,18 @@ public class PolarClockWallpaper extends WallpaperService {
                         c.scale(0.9f, 0.9f);
                     }
 
-                    // Draw seconds  
                     float size = Math.min(width, height) * 0.5f - RING_THICKNESS;
                     final RectF rect = mRect;
                     rect.set(-size, -size, size, size);
-
-                    float angle = ((mStartTime + SystemClock.elapsedRealtime()) % 60000) / 60000.0f;
-                    if (angle < 0) angle = -angle;
-                    paint.setColor(colors[((int) (angle * COLORS_CACHE_COUNT))]);
-                    c.drawArc(rect, 0.0f, angle * 360.0f, false, paint);
+                    float angle;
+                    
+                    if (mShowSeconds) {
+                        // Draw seconds  
+                        angle = ((mStartTime + SystemClock.elapsedRealtime()) % 60000) / 60000.0f;
+                        if (angle < 0) angle = -angle;
+                        paint.setColor(colors[((int) (angle * COLORS_CACHE_COUNT))]);
+                        c.drawArc(rect, 0.0f, angle * 360.0f, false, paint);
+                    }
 
                     // Draw minutes
                     size -= (SMALL_GAP + RING_THICKNESS);
@@ -249,7 +272,13 @@ public class PolarClockWallpaper extends WallpaperService {
 
             mHandler.removeCallbacks(mDrawClock);
             if (mVisible) {
-                mHandler.postDelayed(mDrawClock, 1000 / 25);
+                if (mShowSeconds) {
+                    mHandler.postDelayed(mDrawClock, 1000 / 25);
+                } else {
+                    // If we aren't showing seconds, we don't need to update
+                    // nearly as often.
+                    mHandler.postDelayed(mDrawClock, 2000);
+                }
             }
         }
     }
