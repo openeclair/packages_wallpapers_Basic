@@ -31,6 +31,9 @@
     
     <!-- Wallpaper showing a galaxy -->
     <string name="wallpaper_galaxy">Galaxy</string>
+
+    <!-- Wallpaper showing leaves floating on water -->
+    <string name="wallpaper_fall">Water</string>    
     
     <!-- Wallpaper showing a clock -->
     <string name="wallpaper_clock">Polar clock</string>

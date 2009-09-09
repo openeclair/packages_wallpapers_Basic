@@ -49,6 +49,18 @@
 
         </activity>
         
+        <activity
+            android:label="@string/wallpaper_fall"
+            android:name="com.android.wallpaper.fall.Fall"
+            android:theme="@android:style/Theme.NoTitleBar">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+        
         <service
             android:label="@string/wallpaper_grass"
             android:name="com.android.wallpaper.grass.GrassWallpaper"
@@ -67,6 +79,16 @@
                 <action android:name="android.service.wallpaper.WallpaperService" />
             </intent-filter>
             <meta-data android:name="android.service.wallpaper" android:resource="@xml/galaxy" />
+        </service>
+
+        <service
+            android:label="@string/wallpaper_fall"
+            android:name="com.android.wallpaper.fall.FallWallpaper"
+            android:permission="android.permission.BIND_WALLPAPER">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data android:name="android.service.wallpaper" android:resource="@xml/fall" />
         </service>
 
         <activity
