@@ -35,6 +35,8 @@ import static android.renderscript.ProgramStore.BlendSrcFunc;
 import static android.renderscript.ProgramFragment.EnvMode.*;
 import static android.renderscript.Element.*;
 import static android.util.MathUtils.*;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 
 import java.util.TimeZone;
 
@@ -54,6 +56,8 @@ class GalaxyRS extends RenderScriptScene {
     private static final int RSID_TEXTURE_SPACE = 0;
     private static final int RSID_TEXTURE_LIGHT1 = 1;
     private static final int RSID_TEXTURE_FLARES = 2;
+
+    private final BitmapFactory.Options mOptionsARGB = new BitmapFactory.Options();
 
     @SuppressWarnings({"FieldCanBeLocal"})
     private ProgramFragment mPfBackground;
@@ -91,6 +95,9 @@ class GalaxyRS extends RenderScriptScene {
 
     GalaxyRS(int width, int height) {
         super(width, height);
+
+        mOptionsARGB.inScaled = false;
+        mOptionsARGB.inPreferredConfig = Bitmap.Config.ARGB_8888;
     }
 
     @Override
@@ -261,7 +268,7 @@ class GalaxyRS extends RenderScriptScene {
         final Allocation[] textures = mTextures;
         textures[RSID_TEXTURE_SPACE] = loadTexture(R.drawable.space, "TSpace");
         textures[RSID_TEXTURE_LIGHT1] = loadTexture(R.drawable.light1, "TLight1");
-        textures[RSID_TEXTURE_FLARES] = loadTexture(R.drawable.flares, "TFlares");
+        textures[RSID_TEXTURE_FLARES] = loadTextureARGB(R.drawable.flares, "TFlares");
 
         final int count = textures.length;
         for (int i = 0; i < count; i++) {
@@ -272,6 +279,14 @@ class GalaxyRS extends RenderScriptScene {
     private Allocation loadTexture(int id, String name) {
         final Allocation allocation = Allocation.createFromBitmapResource(mRS, mResources,
                 id, RGB_565, false);
+        allocation.setName(name);
+        return allocation;
+    }
+
+    // TODO: Fix Allocation.createFromBitmapResource() to do this when RGBA_8888 is specified
+    private Allocation loadTextureARGB(int id, String name) {
+        Bitmap b = BitmapFactory.decodeResource(mResources, id, mOptionsARGB);
+        final Allocation allocation = Allocation.createFromBitmap(mRS, b, RGBA_8888, false);
         allocation.setName(name);
         return allocation;
     }

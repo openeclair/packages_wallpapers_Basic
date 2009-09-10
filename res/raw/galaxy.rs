@@ -103,10 +103,10 @@ int main(int index) {
     drawParticles(x, width, height);
     drawLights(x, width, height);
 
-//    if (angle < 68.0f) {
-//        angle += 0.4f;
-//        distance = angle / 68.0f;
-//    }
+    if (angle < 68.0f) {
+        angle += 0.4f;
+        distance = angle / 68.0f;
+    }
 
     return 1;
 }
