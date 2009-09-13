@@ -173,6 +173,7 @@ class GalaxyRS extends RenderScriptScene {
         public int particlesCount;
         public int galaxyRadius;
         public float xOffset;
+        public int isPreview;
     }
 
     static class GalaxyParticle {
@@ -184,11 +185,17 @@ class GalaxyRS extends RenderScriptScene {
     }
 
     private void createState() {
+        boolean isPreview = isPreview();
+
         mGalaxyState = new GalaxyState();
         mGalaxyState.width = mWidth;
         mGalaxyState.height = mHeight;
         mGalaxyState.particlesCount = PARTICLES_COUNT;
         mGalaxyState.galaxyRadius = GALAXY_RADIUS;
+        mGalaxyState.isPreview = isPreview ? 1 : 0;
+        if (isPreview) {
+            mGalaxyState.xOffset = 0.5f;
+        }
 
         mStateType = Type.createFromClass(mRS, GalaxyState.class, 1, "GalaxyState");
         mState = Allocation.createTyped(mRS, mStateType);
@@ -209,23 +216,29 @@ class GalaxyRS extends RenderScriptScene {
 
     @SuppressWarnings({"PointlessArithmeticExpression"})
     private void createParticle(GalaxyParticle gp, int index, float scale) {
-        float d = abs(randomGauss()) * GALAXY_RADIUS / 2.0f + random(-4.0f, 4.0f);
-        float z = randomGauss() * 0.5f * 0.8f * ((GALAXY_RADIUS - d) / (float) GALAXY_RADIUS);
+        float d = abs(randomGauss()) * GALAXY_RADIUS * 0.5f + random(64.0f);
+        float id = d / (float) GALAXY_RADIUS;
+        float z = randomGauss() * 0.4f * (1.0f - id);
         float p = -d * ELLIPSE_TWIST;
 
-        final float nd = d / (float) GALAXY_RADIUS;
-
         int red, green, blue, alpha;
-        if (d < GALAXY_RADIUS / 3.0f) {
-            red = (int) (220 + nd * 35);
+        if (d < GALAXY_RADIUS * 0.33f) {
+            red = (int) (220 + id * 35);
             green = 220;
             blue = 220;
         } else {
             red = 180;
             green = 180;
-            blue = (int) constrain(140 + nd * 115, 140, 255);
+            blue = (int) constrain(140 + id * 115, 140, 255);
         }
-        alpha = (int) (40 + nd * 215);
+
+        if (d > GALAXY_RADIUS * 0.15f) {
+            z *= 0.6f * (1.0f - id);
+        } else {
+            z *= 0.72f;
+        }
+
+        alpha = (int) (140 + (1.0f - id) * 115);
         int color = red | green << 8 | blue << 16 | alpha << 24;
 
         // Map to the projection coordinates (viewport.x = -1.0 -> 1.0)

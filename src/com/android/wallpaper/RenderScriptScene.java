@@ -24,6 +24,7 @@ import android.renderscript.ScriptC;
 public abstract class RenderScriptScene {
     protected int mWidth;
     protected int mHeight;
+    protected boolean mPreview;
     protected Resources mResources;
     protected RenderScript mRS;
     protected ScriptC mScript;
@@ -33,10 +34,15 @@ public abstract class RenderScriptScene {
         mHeight = height;
     }
 
-    public void init(RenderScript rs, Resources res) {
+    public void init(RenderScript rs, Resources res, boolean isPreview) {
         mRS = rs;
         mResources = res;
+        mPreview = isPreview;
         mScript = createScript();
+    }
+    
+    public boolean isPreview() {
+        return mPreview;
     }
 
     public int getWidth() {

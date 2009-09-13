@@ -72,7 +72,7 @@ public abstract class RenderScriptWallpaper<T extends RenderScriptScene> extends
             super.onSurfaceChanged(holder, format, width, height);
             if (mRenderer == null) {
                 mRenderer = createScene(width, height);
-                mRenderer.init(mRs, getResources());
+                mRenderer.init(mRs, getResources(), isPreview());
                 mRenderer.start();
             } else {
                 mRenderer.resize(width, height);

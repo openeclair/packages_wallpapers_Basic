@@ -37,7 +37,7 @@ class FallView extends RSSurfaceView {
 
         RenderScript RS = createRenderScript(false);
         mRender = new FallRS(w, h);
-        mRender.init(RS, getResources());
+        mRender.init(RS, getResources(), false);
         mRender.start();
     }
 

@@ -35,7 +35,7 @@ class GalaxyView extends RSSurfaceView {
 
         RenderScript RS = createRenderScript(false);
         GalaxyRS render = new GalaxyRS(w, h);
-        render.init(RS, getResources());
+        render.init(RS, getResources(), false);
         render.setOffset(0.5f, 0.0f, 0, 0);
         render.start();
     }

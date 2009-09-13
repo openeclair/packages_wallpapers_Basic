@@ -23,8 +23,8 @@ float angle;
 float distance;
 
 void init() {
-    angle = 0.0f;
-    distance = 0.0f;
+    angle = 37.0f;
+    distance = 0.55f;        
 }
 
 void drawSpace(float xOffset, int width, int height) {
@@ -61,7 +61,7 @@ void drawParticles(float xOffset, int width, int height) {
 
     float matrix[16];
     matrixLoadTranslate(matrix, 0.0f, 0.0f, 10.0f - 6.0f * distance);
-    matrixScale(matrix, 6.15f, 6.0f, 1.0f);
+    matrixScale(matrix, 6.6f, 6.0f, 1.0f);
     matrixRotate(matrix, angle, 1.0f, 0.5f, 0.0f);
     vpLoadModelMatrix(matrix);
 
@@ -103,9 +103,17 @@ int main(int index) {
     drawParticles(x, width, height);
     drawLights(x, width, height);
 
-    if (angle < 68.0f) {
-        angle += 0.4f;
-        distance = angle / 68.0f;
+    if (State->isPreview == 0) {
+        if (angle > 0.0f) {
+            angle -= 0.4f;
+            distance = angle / 68.0f;
+        }
+    } else {
+        // Unfortunately this cannot happen in init()
+        // since the State structure instance does not
+        // exist at this point
+        angle = 0.0f;
+        distance = 0.0f;
     }
 
     return 1;
