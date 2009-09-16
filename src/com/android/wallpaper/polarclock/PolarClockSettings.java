@@ -20,26 +20,19 @@ import com.android.wallpaper.R;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.CheckBoxPreference;
-import android.preference.PreferenceActivity;
+import android.service.wallpaper.WallpaperSettingsActivity;
 
-public class PolarClockSettings extends PreferenceActivity
+public class PolarClockSettings extends WallpaperSettingsActivity
     implements SharedPreferences.OnSharedPreferenceChangeListener {
 
-    private CheckBoxPreference mShowSeconds;
-    
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
         getPreferenceManager().setSharedPreferencesName(
                 PolarClockWallpaper.SHARED_PREFS_NAME);
         addPreferencesFromResource(R.xml.polar_clock_prefs);
-        mShowSeconds = (CheckBoxPreference) findPreference(
-                PolarClockWallpaper.PREF_SHOW_SECONDS);
         getPreferenceManager().getSharedPreferences().registerOnSharedPreferenceChangeListener(
                 this);
-        getWindow().setBackgroundDrawableResource(
-                android.R.drawable.screen_background_dark_transparent);
     }
 
     @Override

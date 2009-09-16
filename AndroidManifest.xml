@@ -94,7 +94,7 @@
         <activity
             android:label="@string/clock_settings"
             android:name="com.android.wallpaper.polarclock.PolarClockSettings"
-            android:theme="@android:style/Theme.Wallpaper"
+            android:theme="@android:style/Theme.Light.WallpaperSettings"
             android:exported="true">
         </activity>
         
