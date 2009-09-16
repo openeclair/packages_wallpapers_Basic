@@ -60,10 +60,12 @@ public abstract class RenderScriptWallpaper<T extends RenderScriptScene> extends
         @Override
         public void onVisibilityChanged(boolean visible) {
             super.onVisibilityChanged(visible);
-            if (visible) {
-                mRenderer.start();                
-            } else {
-                mRenderer.stop();
+            if (mRenderer != null) {
+                if (visible) {
+                    mRenderer.start();                
+                } else {
+                    mRenderer.stop();
+                }
             }
         }
 
