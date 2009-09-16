@@ -21,5 +21,6 @@
 <!-- about the polar clock. -->
 
 <wallpaper xmlns:android="http://schemas.android.com/apk/res/android"
+		android:thumbnail="@drawable/polarclock_thumb"
         android:settingsActivity="com.android.wallpaper.polarclock.PolarClockSettings"
 />
