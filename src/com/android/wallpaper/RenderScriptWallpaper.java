@@ -94,7 +94,7 @@ public abstract class RenderScriptWallpaper<T extends RenderScriptScene> extends
             while (surface == null) {
                 surface = holder.getSurface();
             }
-            mRs = new RenderScript(surface, false);
+            mRs = new RenderScript(surface, false, false);
         }
 
         @Override

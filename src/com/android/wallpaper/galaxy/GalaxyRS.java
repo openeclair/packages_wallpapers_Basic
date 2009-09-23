@@ -20,6 +20,7 @@ import android.renderscript.ScriptC;
 import android.renderscript.ProgramFragment;
 import android.renderscript.ProgramStore;
 import android.renderscript.ProgramVertex;
+import android.renderscript.ProgramRaster;
 import android.renderscript.Allocation;
 import android.renderscript.Sampler;
 import android.renderscript.Element;
@@ -103,6 +104,7 @@ class GalaxyRS extends RenderScriptScene {
     @Override
     protected ScriptC createScript() {
         createProgramVertex();
+        createProgramRaster();
         createProgramFragmentStore();
         createProgramFragment();
         createScriptStructures();
@@ -332,7 +334,7 @@ class GalaxyRS extends RenderScriptScene {
         builder.setTexEnvMode(MODULATE, 0);
         mPfStars = builder.create();
         mPfStars.setName("PFStars");
-        mPfBackground.bindSampler(mStarSampler, 0);        
+        mPfBackground.bindSampler(mStarSampler, 0);
     }
 
     private void createProgramFragmentStore() {
@@ -360,7 +362,7 @@ class GalaxyRS extends RenderScriptScene {
         mPvBackground = builder.create();
         mPvBackground.bindAllocation(mPvOrthoAlloc);
         mPvBackground.setName("PVBackground");
-        
+
         mPvProjectionAlloc = new ProgramVertex.MatrixAllocation(mRS);
         mPvProjectionAlloc.setupProjectionNormalized(mWidth, mHeight);
 
@@ -369,4 +371,12 @@ class GalaxyRS extends RenderScriptScene {
         mPvStars.bindAllocation(mPvProjectionAlloc);
         mPvStars.setName("PVStars");
     }
+
+    private void createProgramRaster() {
+        ProgramRaster.Builder b = new ProgramRaster.Builder(mRS, null, null);
+        b.setPointSmoothEnable(true);
+        b.setPointSpriteEnable(true);
+        mRS.contextBindProgramRaster(b.create());
+    }
+
 }
