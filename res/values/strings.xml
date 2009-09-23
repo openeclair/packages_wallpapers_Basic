@@ -41,4 +41,8 @@
     <string name="clock_settings">Polar clock settings</string>
     <!-- Polar clock: label for "show seconds" pref -->
     <string name="show_seconds">Show seconds</string>
+    <!-- Polar clock: label for "cycle colors" pref -->
+    <string name="cycle_colors">Cycle ring colors</string>
+    <!-- Polar clock: label for "variable widths" pref -->
+    <string name="variable_line_width">Vary ring widths</string>
 </resources>

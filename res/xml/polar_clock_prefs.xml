@@ -24,4 +24,16 @@
             android:defaultValue="true"
             android:persistent="true"
             />
+    <CheckBoxPreference
+            android:key="cycle_colors"
+            android:title="@string/cycle_colors"
+            android:defaultValue="false"
+            android:persistent="true"
+            />
+    <CheckBoxPreference
+            android:key="variable_line_width"
+            android:title="@string/variable_line_width"
+            android:defaultValue="true"
+            android:persistent="true"
+            />
 </PreferenceScreen>

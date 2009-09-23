@@ -37,7 +37,12 @@ import java.util.TimeZone;
 
 public class PolarClockWallpaper extends WallpaperService {
     public static final String SHARED_PREFS_NAME = "polar_clock_settings";
+    
     public static final String PREF_SHOW_SECONDS = "show_seconds";
+    public static final String PREF_VARIABLE_LINE_WIDTH = "variable_line_width";
+    public static final String PREF_CYCLE_COLORS = "cycle_colors";
+
+    public static final int BACKGROUND_COLOR = 0xffffffff;
     
     private final Handler mHandler = new Handler();
 
@@ -65,14 +70,44 @@ public class PolarClockWallpaper extends WallpaperService {
         private static final float SATURATION = 0.8f;
         private static final float BRIGHTNESS = 0.9f;
 
-        private static final float RING_THICKNESS = 24.0f;
+        private static final float SMALL_RING_THICKNESS = 8.0f;
+        private static final float MEDIUM_RING_THICKNESS = 16.0f;
+        private static final float LARGE_RING_THICKNESS = 32.0f;
+
+        private static final float DEFAULT_RING_THICKNESS = 24.0f;
+
         private static final float SMALL_GAP = 14.0f;
         private static final float LARGE_GAP = 38.0f;
 
         private static final int COLORS_CACHE_COUNT = 720;
+
+        class ColorPalette {
+            ColorPalette(String name, int bg, int s, int m, int h, int d, int o) {
+                this.name = name; this.bg = bg;
+                second = s; minute = m; hour = h; day = d; month = o;
+            }
+            public final String name;
+            public final int bg;
+            public final int second;
+            public final int minute;
+            public final int hour;
+            public final int day;
+            public final int month;
+        }
         
+        // XXX: make this an array of named palettes, selectable in prefs 
+        //      via a spinner (bonus points: move to XML)
+        private final ColorPalette mPalette = new ColorPalette(
+            "MutedAndroid",
+            0xFF555555, 
+            0xFF00FF00, 0xFF333333, 0xFF000000,
+            0xFF888888, 0xFFAAAAAA
+        );
+
         private SharedPreferences mPrefs;
         private boolean mShowSeconds;
+        private boolean mVariableLineWidth;
+        private boolean mCycleColors;
         
         private boolean mWatcherRegistered;
         private float mStartTime;
@@ -81,7 +116,7 @@ public class PolarClockWallpaper extends WallpaperService {
         private final Paint mPaint = new Paint();
         private final RectF mRect = new RectF();
         private final int[] mColors = new int[COLORS_CACHE_COUNT];
-
+        
         private float mOffsetX;
 
         private final BroadcastReceiver mWatcher = new BroadcastReceiver() {
@@ -112,7 +147,7 @@ public class PolarClockWallpaper extends WallpaperService {
         @Override
         public void onCreate(SurfaceHolder surfaceHolder) {
             super.onCreate(surfaceHolder);
-            
+
             mPrefs = PolarClockWallpaper.this.getSharedPreferences(SHARED_PREFS_NAME, 0);
             mPrefs.registerOnSharedPreferenceChangeListener(this);
             onSharedPreferenceChanged(mPrefs, null);
@@ -123,7 +158,7 @@ public class PolarClockWallpaper extends WallpaperService {
 
             final Paint paint = mPaint;
             paint.setAntiAlias(true);
-            paint.setStrokeWidth(RING_THICKNESS);
+            paint.setStrokeWidth(DEFAULT_RING_THICKNESS);
             paint.setStrokeCap(Paint.Cap.ROUND);
             paint.setStyle(Paint.Style.STROKE);
         }
@@ -140,11 +175,26 @@ public class PolarClockWallpaper extends WallpaperService {
 
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
                 String key) {
-            if (key == null || PREF_SHOW_SECONDS.equals(key)) {
-                mShowSeconds = sharedPreferences.getBoolean(PREF_SHOW_SECONDS, true);
-                if (mVisible) {
-                    drawFrame();
-                }
+            
+            boolean changed = false;
+            if (null == key || PREF_SHOW_SECONDS.equals(key)) {
+                mShowSeconds = sharedPreferences.getBoolean(
+                    PREF_SHOW_SECONDS, true);
+                changed = true;
+            }
+            if (null == key || PREF_CYCLE_COLORS.equals(key)) {
+                mCycleColors = sharedPreferences.getBoolean(
+                    PREF_CYCLE_COLORS, false);
+                changed = true;
+            }
+            if (null == key || PREF_VARIABLE_LINE_WIDTH.equals(key)) {
+                mVariableLineWidth = sharedPreferences.getBoolean(
+                    PREF_VARIABLE_LINE_WIDTH, true);
+                changed = true;
+            }
+
+            if (mVisible && changed) {
+                drawFrame();
             }
         }
 
@@ -213,57 +263,105 @@ public class PolarClockWallpaper extends WallpaperService {
                     int s = width / 2;
                     int t = height / 2;
 
-                    c.drawColor(0xffffffff);
+                    if (mCycleColors) {
+                        c.drawColor(BACKGROUND_COLOR);
+                    } else {
+                        c.drawColor(mPalette.bg);
+                    }
                     c.translate(s + MathUtils.lerp(s, -s, mOffsetX), t);
                     c.rotate(-90.0f);
                     if (height < width) {
                         c.scale(0.9f, 0.9f);
                     }
 
-                    float size = Math.min(width, height) * 0.5f - RING_THICKNESS;
+                    float size = Math.min(width, height) * 0.5f - DEFAULT_RING_THICKNESS;
                     final RectF rect = mRect;
                     rect.set(-size, -size, size, size);
                     float angle;
+
+                    float lastRingThickness = DEFAULT_RING_THICKNESS;
                     
                     if (mShowSeconds) {
                         // Draw seconds  
                         angle = ((mStartTime + SystemClock.elapsedRealtime()) % 60000) / 60000.0f;
                         if (angle < 0) angle = -angle;
-                        paint.setColor(colors[((int) (angle * COLORS_CACHE_COUNT))]);
+                        if (mCycleColors) {
+                            paint.setColor(colors[((int) (angle * COLORS_CACHE_COUNT))]);
+                        } else {
+                            paint.setColor(mPalette.second);
+                        }
+
+                        if (mVariableLineWidth) {
+                            lastRingThickness = SMALL_RING_THICKNESS;
+                            paint.setStrokeWidth(lastRingThickness);
+                        }
                         c.drawArc(rect, 0.0f, angle * 360.0f, false, paint);
                     }
 
                     // Draw minutes
-                    size -= (SMALL_GAP + RING_THICKNESS);
+                    size -= (SMALL_GAP + lastRingThickness);
                     rect.set(-size, -size, size, size);
 
                     angle = ((calendar.minute * 60.0f + calendar.second) % 3600) / 3600.0f;
-                    paint.setColor(colors[((int) (angle * COLORS_CACHE_COUNT))]);                    
+                    if (mCycleColors) {
+                        paint.setColor(colors[((int) (angle * COLORS_CACHE_COUNT))]);                    
+                    } else {
+                        paint.setColor(mPalette.minute);
+                    }
+
+                    if (mVariableLineWidth) {
+                        lastRingThickness = MEDIUM_RING_THICKNESS;
+                        paint.setStrokeWidth(lastRingThickness);
+                    }
                     c.drawArc(rect, 0.0f, angle * 360.0f, false, paint);
                     
                     // Draw hours
-                    size -= (SMALL_GAP + RING_THICKNESS);
+                    size -= (SMALL_GAP + lastRingThickness);
                     rect.set(-size, -size, size, size);
 
                     angle = ((calendar.hour * 60.0f + calendar.minute) % 1440) / 1440.0f;
-                    paint.setColor(colors[((int) (angle * COLORS_CACHE_COUNT))]);                    
+                    if (mCycleColors) {
+                        paint.setColor(colors[((int) (angle * COLORS_CACHE_COUNT))]);                    
+                    } else {
+                        paint.setColor(mPalette.hour);
+                    }
+                    if (mVariableLineWidth) {
+                        lastRingThickness = LARGE_RING_THICKNESS;
+                        paint.setStrokeWidth(lastRingThickness);
+                    }
                     c.drawArc(rect, 0.0f, angle * 360.0f, false, paint);
 
                     // Draw day
-                    size -= (LARGE_GAP + RING_THICKNESS);
+                    size -= (LARGE_GAP + lastRingThickness);
                     rect.set(-size, -size, size, size);
 
                     angle = (calendar.monthDay - 1) /
                             (float) (calendar.getActualMaximum(Time.MONTH_DAY) - 1);
-                    paint.setColor(colors[((int) (angle * COLORS_CACHE_COUNT))]);                    
+                    if (mCycleColors) {
+                        paint.setColor(colors[((int) (angle * COLORS_CACHE_COUNT))]);                    
+                    } else {
+                        paint.setColor(mPalette.day);
+                    }
+                    if (mVariableLineWidth) {
+                        lastRingThickness = MEDIUM_RING_THICKNESS;
+                        paint.setStrokeWidth(lastRingThickness);
+                    }
                     c.drawArc(rect, 0.0f, angle * 360.0f, false, paint);
 
                     // Draw month
-                    size -= (SMALL_GAP + RING_THICKNESS);
+                    size -= (SMALL_GAP + lastRingThickness);
                     rect.set(-size, -size, size, size);
 
                     angle = (calendar.month - 1) / 11.0f;
-                    paint.setColor(colors[((int) (angle * COLORS_CACHE_COUNT))]);                    
+                    if (mCycleColors) {
+                        paint.setColor(colors[((int) (angle * COLORS_CACHE_COUNT))]);                    
+                    } else {
+                        paint.setColor(mPalette.month);
+                    }
+                    if (mVariableLineWidth) {
+                        lastRingThickness = LARGE_RING_THICKNESS;
+                        paint.setStrokeWidth(lastRingThickness);
+                    }
                     c.drawArc(rect, 0.0f, angle * 360.0f, false, paint);
                 }
             } finally {
