@@ -47,7 +47,6 @@ import com.android.wallpaper.RenderScriptScene;
 class GalaxyRS extends RenderScriptScene {
     private static final int GALAXY_RADIUS = 300;
     private static final int PARTICLES_COUNT = 12000;
-    private static final float ELLIPSE_TWIST = 0.023333333f;
 
     private static final int RSID_STATE = 0;
     private static final int RSID_PARTICLES = 1;
@@ -114,6 +113,7 @@ class GalaxyRS extends RenderScriptScene {
         sb.setType(mStateType, "State", RSID_STATE);
         sb.setType(mParticlesMesh.getVertexType(0), "Particles", RSID_PARTICLES_BUFFER);
         sb.setType(mParticlesType, "Stars", RSID_PARTICLES);
+        ScriptC.Invokable inv = sb.addInvokable("initParticles");
         sb.setScript(mResources, R.raw.galaxy);
         sb.setRoot(true);
 
@@ -124,6 +124,7 @@ class GalaxyRS extends RenderScriptScene {
         script.bindAllocation(mState, RSID_STATE);
         script.bindAllocation(mParticles, RSID_PARTICLES);
         script.bindAllocation(mParticlesBuffer, RSID_PARTICLES_BUFFER);
+        inv.execute();
 
         return script;
     }
@@ -208,73 +209,6 @@ class GalaxyRS extends RenderScriptScene {
         GalaxyParticle gp = new GalaxyParticle();
         mParticlesType = Type.createFromClass(mRS, GalaxyParticle.class, PARTICLES_COUNT, "Particle");
         mParticles = Allocation.createTyped(mRS, mParticlesType);
-
-        final float scale = GALAXY_RADIUS / (mWidth * 0.5f);
-
-        for (int i = 0; i < PARTICLES_COUNT; i ++) {
-            createParticle(gp, i, scale);
-        }
-    }
-
-    @SuppressWarnings({"PointlessArithmeticExpression"})
-    private void createParticle(GalaxyParticle gp, int index, float scale) {
-        float d = abs(randomGauss()) * GALAXY_RADIUS * 0.5f + random(64.0f);
-        float id = d / (float) GALAXY_RADIUS;
-        float z = randomGauss() * 0.4f * (1.0f - id);
-        float p = -d * ELLIPSE_TWIST;
-
-        int red, green, blue, alpha;
-        if (d < GALAXY_RADIUS * 0.33f) {
-            red = (int) (220 + id * 35);
-            green = 220;
-            blue = 220;
-        } else {
-            red = 180;
-            green = 180;
-            blue = (int) constrain(140 + id * 115, 140, 255);
-        }
-
-        if (d > GALAXY_RADIUS * 0.15f) {
-            z *= 0.6f * (1.0f - id);
-        } else {
-            z *= 0.72f;
-        }
-
-        alpha = (int) (140 + (1.0f - id) * 115);
-        int color = red | green << 8 | blue << 16 | alpha << 24;
-
-        // Map to the projection coordinates (viewport.x = -1.0 -> 1.0)
-        d = map(-4.0f, GALAXY_RADIUS + 4.0f, 0.0f, scale, d);
-
-        gp.angle = random(0.0f, (float) (Math.PI * 2.0));
-        gp.distance = d;
-        gp.speed = random(0.0015f, 0.0025f) * (0.5f + (scale / d)) * 0.8f;
-        gp.s = (float) Math.cos(p);
-        gp.t = (float) Math.sin(p);
-
-        final float[] floatData = mFloatData;
-        floatData[0] = Float.intBitsToFloat(color);
-        floatData[3] = z / 5.0f;
-        floatData[4] = random(1.2f, 2.1f) * 6f;
-
-        mParticlesBuffer.subData1D(index, 1, floatData);
-        mParticles.subData(index, gp);
-    }
-
-    private static float randomGauss() {
-        float x1;
-        float x2;
-        float w;
-
-        do {
-            x1 = 2.0f * random(0.0f, 1.0f) - 1.0f;
-            x2 = 2.0f * random(0.0f, 1.0f) - 1.0f;
-            w = x1 * x1 + x2 * x2;
-        } while (w >= 1.0f);
-
-        w = (float) Math.sqrt(-2.0 * log(w) / w);
-
-        return x1 * w;
     }
 
     private void loadTextures() {
