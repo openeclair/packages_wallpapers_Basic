@@ -26,6 +26,7 @@ import android.renderscript.Sampler;
 import android.renderscript.Element;
 import android.renderscript.Light;
 import android.renderscript.Type;
+import android.renderscript.SimpleMesh;
 import static android.renderscript.Sampler.Value.LINEAR;
 import static android.renderscript.Sampler.Value.WRAP;
 import static android.renderscript.ProgramStore.DepthFunc.*;
@@ -119,8 +120,8 @@ class FallRS extends RenderScriptScene {
 
     private int mMeshHeight;
     @SuppressWarnings({"FieldCanBeLocal"})
-    private RenderScript.TriangleMesh mMesh;
-    private WorldState mWorldState;    
+    private SimpleMesh mMesh;
+    private WorldState mWorldState;
 
     private Allocation mRippleMap;
     private Allocation mRefractionMap;
@@ -177,8 +178,7 @@ class FallRS extends RenderScriptScene {
     }
 
     private void createMesh() {
-        final RenderScript rs = mRS;
-        rs.triangleMeshBegin(Element.NORM_ST_XYZ_F32, Element.INDEX_16);
+        SimpleMesh.TriangleMeshBuilder tmb = new SimpleMesh.TriangleMeshBuilder(mRS, 3, true, true);
 
         int wResolution;
         int hResolution;
@@ -209,12 +209,12 @@ class FallRS extends RenderScriptScene {
             final float t = 1.0f - y / (float) hResolution;
             for (int x = 0; x <= wResolution; x++) {
                 if (shift) {
-                    rs.triangleMeshAddVertex_XYZ_ST_NORM(
+                    tmb.add_XYZ_ST_NORM(
                             -1.0f + x * quadWidth - quadWidth, yOffset, 0.0f,
                             x / (float) wResolution, t,
                             0.0f, 0.0f, -1.0f);
                 } else {
-                    rs.triangleMeshAddVertex_XYZ_ST_NORM(
+                    tmb.add_XYZ_ST_NORM(
                             -1.0f + x * quadWidth - quadWidth * 0.5f, yOffset, 0.0f,
                             x / (float) wResolution, t,
                             0.0f, 0.0f, -1.0f);
@@ -229,16 +229,16 @@ class FallRS extends RenderScriptScene {
                 final int index = yOffset + x;
                 final int iWR1 = index + wResolution + 1;
                 if (shift) {
-                    rs.triangleMeshAddTriangle(index, index + 1, iWR1);
-                    rs.triangleMeshAddTriangle(index + 1, iWR1 + 1, iWR1);
+                    tmb.addTriangle(index, index + 1, iWR1);
+                    tmb.addTriangle(index + 1, iWR1 + 1, iWR1);
                 } else {
-                    rs.triangleMeshAddTriangle(index, iWR1 + 1, iWR1);
-                    rs.triangleMeshAddTriangle(index, index + 1, iWR1 + 1);
+                    tmb.addTriangle(index, iWR1 + 1, iWR1);
+                    tmb.addTriangle(index, index + 1, iWR1 + 1);
                 }
             }
         }
 
-        mMesh = rs.triangleMeshCreate();
+        mMesh = tmb.create();
         mMesh.setName("WaterMesh");
 
         mMeshWidth = wResolution + 1;

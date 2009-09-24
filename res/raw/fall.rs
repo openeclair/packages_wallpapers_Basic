@@ -162,7 +162,7 @@ void generateRipples() {
 
     int* current = loadArrayI32(RSID_RIPPLE_MAP, index * rippleMapSize + origin);
     int *map = loadArrayI32(RSID_REFRACTION_MAP, 0);
-    float *vertices = loadTriangleMeshVerticesF(NAMED_WaterMesh);
+    float *vertices = loadSimpleMeshVerticesF(NAMED_WaterMesh, 0);
     struct vert_s *vert = (struct vert_s *)vertices;
 
     float fw = 1.f / width;
@@ -370,7 +370,7 @@ void drawLeaves() {
     float glWidth = State->glWidth;
     float glHeight = State->glHeight;
 
-    float *vertices = loadTriangleMeshVerticesF(NAMED_WaterMesh);
+    float *vertices = loadSimpleMeshVerticesF(NAMED_WaterMesh, 0);
 
     int i = 0;
     for ( ; i < count; i += LEAF_STRUCT_FIELDS_COUNT) {
@@ -385,7 +385,7 @@ void drawLeaves() {
 void drawRiverbed() {
     bindTexture(NAMED_PFBackground, 0, NAMED_TRiverbed);
 
-    drawTriangleMesh(NAMED_WaterMesh);
+    drawSimpleMesh(NAMED_WaterMesh);
 }
 
 void drawSky() {
@@ -409,7 +409,7 @@ void drawSky() {
     matrixLoadTranslate(matrix, x, y, 0.0f);
     vpLoadTextureMatrix(matrix);
 
-    drawTriangleMesh(NAMED_WaterMesh);
+    drawSimpleMesh(NAMED_WaterMesh);
 
     matrixLoadIdentity(matrix);
     vpLoadTextureMatrix(matrix);
@@ -425,14 +425,14 @@ void drawLighting() {
     bindProgramFragment(NAMED_PFLighting);
     bindProgramVertex(NAMED_PVLight);
 
-    drawTriangleMesh(NAMED_WaterMesh);
+    drawSimpleMesh(NAMED_WaterMesh);
 }
 
 void drawNormals() {
     int width = State->meshWidth;
     int height = State->meshHeight;
 
-    float *vertices = loadTriangleMeshVerticesF(NAMED_WaterMesh);
+    float *vertices = loadSimpleMeshVerticesF(NAMED_WaterMesh, 0);
 
     bindProgramVertex(NAMED_PVSky);
     bindProgramFragment(NAMED_PFLighting);
@@ -466,7 +466,7 @@ int main(int index) {
 
     updateRipples();
     generateRipples();
-    updateTriangleMesh(NAMED_WaterMesh);
+    updateSimpleMesh(NAMED_WaterMesh);
 
     drawRiverbed();
     drawSky();
