@@ -41,7 +41,7 @@ import java.util.TimeZone;
 
 class GrassRS extends RenderScriptScene {
     private static final float TESSELATION = 0.5f;
-    
+
     private static final int RSID_STATE = 0;
 
     private static final int TEXTURES_COUNT = 5;
@@ -98,14 +98,14 @@ class GrassRS extends RenderScriptScene {
     @Override
     public void resize(int width, int height) {
         super.resize(width, height);
-        
+
         mWorldState.width = width;
         mWorldState.height = height;
         mState.data(mWorldState);
 
         mPvOrthoAlloc.setupOrthoWindow(mWidth, mHeight);
 
-        // TODO: REPOSITION BLADES        
+        // TODO: REPOSITION BLADES
     }
 
     @Override
@@ -128,7 +128,7 @@ class GrassRS extends RenderScriptScene {
         script.bindAllocation(mState, RSID_STATE);
         script.bindAllocation(mBlades, RSID_BLADES);
         script.bindAllocation(mBladesBuffer, RSID_BLADES_BUFFER);
-        
+
         return script;
     }
 
@@ -171,7 +171,7 @@ class GrassRS extends RenderScriptScene {
             triangles += createBlade(blades, i);
         }
 
-        mBlades = Allocation.createSized(mRS, USER_FLOAT, blades.length);
+        mBlades = Allocation.createSized(mRS, USER_F32(mRS), blades.length);
         mBlades.data(blades);
 
         mTriangles = triangles;
@@ -275,10 +275,10 @@ class GrassRS extends RenderScriptScene {
     }
 
     private Allocation generateTextureAlpha(int width, int height, int[] data, String name) {
-        final Type.Builder builder = new Type.Builder(mRS, A_8);
+        final Type.Builder builder = new Type.Builder(mRS, A_8(mRS));
         builder.add(Dimension.X, width);
         builder.add(Dimension.Y, height);
-        
+
         final Allocation allocation = Allocation.createTyped(mRS, builder.create());
         allocation.data(data);
         allocation.setName(name);
@@ -287,7 +287,7 @@ class GrassRS extends RenderScriptScene {
 
     private Allocation loadTexture(int id, String name) {
         final Allocation allocation = Allocation.createFromBitmapResource(mRS, mResources,
-                id, RGB_565, false);
+                id, RGB_565(mRS), false);
         allocation.setName(name);
         return allocation;
     }

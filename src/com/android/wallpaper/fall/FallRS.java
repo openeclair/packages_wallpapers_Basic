@@ -256,7 +256,7 @@ class FallRS extends RenderScriptScene {
 
     private void createLeaves() {
         final float[] leaves = new float[LEAVES_COUNT * LEAF_STRUCT_FIELDS_COUNT];
-        mLeaves = Allocation.createSized(mRS, USER_FLOAT, leaves.length);
+        mLeaves = Allocation.createSized(mRS, USER_F32(mRS), leaves.length);
         for (int i = 0; i < leaves.length; i += LEAF_STRUCT_FIELDS_COUNT) {
             createLeaf(leaves, i);
         }
@@ -270,13 +270,13 @@ class FallRS extends RenderScriptScene {
             float d = (float) Math.tan(Math.asin(Math.sin(Math.atan(i * (1.0f / 256.0f))) * ir));
             refractionMap[i] = (int) Math.floor(d * (1 << 16) + 0.5f);
         }
-        mRefractionMap = Allocation.createSized(mRS, USER_I32, refractionMap.length);
+        mRefractionMap = Allocation.createSized(mRS, USER_I32(mRS), refractionMap.length);
         mRefractionMap.data(refractionMap);
     }
 
     private void createRippleMap(int rippleMapSize) {
         final int[] rippleMap = new int[rippleMapSize * 2];
-        mRippleMap = Allocation.createSized(mRS, USER_I32, rippleMap.length);
+        mRippleMap = Allocation.createSized(mRS, USER_I32(mRS), rippleMap.length);
         mRippleMap.data(rippleMap);
     }
 
@@ -358,14 +358,14 @@ class FallRS extends RenderScriptScene {
 
     private Allocation loadTexture(int id, String name) {
         final Allocation allocation = Allocation.createFromBitmapResource(mRS, mResources,
-                id, RGB_565, false);
+                id, RGB_565(mRS), false);
         allocation.setName(name);
         return allocation;
     }
 
     private Allocation loadTextureARGB(int id, String name) {
         Bitmap b = BitmapFactory.decodeResource(mResources, id, mOptionsARGB);
-        final Allocation allocation = Allocation.createFromBitmap(mRS, b, RGBA_8888, false);
+        final Allocation allocation = Allocation.createFromBitmap(mRS, b, RGBA_8888(mRS), false);
         allocation.setName(name);
         return allocation;
     }
