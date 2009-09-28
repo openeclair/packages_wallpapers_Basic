@@ -35,7 +35,6 @@ import static android.renderscript.ProgramStore.BlendDstFunc;
 import static android.renderscript.ProgramStore.BlendSrcFunc;
 import static android.renderscript.ProgramFragment.EnvMode.*;
 import static android.renderscript.Element.*;
-import static android.util.MathUtils.*;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
@@ -91,8 +90,6 @@ class GalaxyRS extends RenderScriptScene {
     @SuppressWarnings({"FieldCanBeLocal"})
     private SimpleMesh mParticlesMesh;
 
-    private final float[] mFloatData = new float[5];
-
     GalaxyRS(int width, int height) {
         super(width, height);
 
@@ -113,7 +110,7 @@ class GalaxyRS extends RenderScriptScene {
         sb.setType(mStateType, "State", RSID_STATE);
         sb.setType(mParticlesMesh.getVertexType(0), "Particles", RSID_PARTICLES_BUFFER);
         sb.setType(mParticlesType, "Stars", RSID_PARTICLES);
-        ScriptC.Invokable inv = sb.addInvokable("initParticles");
+        ScriptC.Invokable initParticles = sb.addInvokable("initParticles");
         sb.setScript(mResources, R.raw.galaxy);
         sb.setRoot(true);
 
@@ -124,7 +121,7 @@ class GalaxyRS extends RenderScriptScene {
         script.bindAllocation(mState, RSID_STATE);
         script.bindAllocation(mParticles, RSID_PARTICLES);
         script.bindAllocation(mParticlesBuffer, RSID_PARTICLES_BUFFER);
-        inv.execute();
+        initParticles.execute();
 
         return script;
     }
@@ -206,7 +203,6 @@ class GalaxyRS extends RenderScriptScene {
     }
 
     private void createParticles() {
-        GalaxyParticle gp = new GalaxyParticle();
         mParticlesType = Type.createFromClass(mRS, GalaxyParticle.class, PARTICLES_COUNT, "Particle");
         mParticles = Allocation.createTyped(mRS, mParticlesType);
     }
