@@ -14,6 +14,7 @@
 
 #pragma version(1)
 #pragma stateVertex(PVBackground)
+#pragma stateRaster(parent)
 #pragma stateFragment(PFBackground)
 #pragma stateFragmentStore(PFSBackground)
 
