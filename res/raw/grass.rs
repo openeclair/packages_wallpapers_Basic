@@ -42,16 +42,16 @@
 #define MAX_BEND 0.09f
 
 #define MIDNIGHT 0.0f
-#define MORNING 0.375f
-#define AFTERNOON 0.6f
-#define DUSK 0.8f
+#define MORNING 0.3f
+#define AFTERNOON 0.75f
+#define DUSK 0.84f
 
 #define SECONDS_IN_DAY 86400.0f
 
 #define PI 3.1415926f
 #define HALF_PI 1.570796326f
 
-#define REAL_TIME 0
+#define REAL_TIME 1
 
 float time() {
     if (REAL_TIME) {
