@@ -41,8 +41,26 @@
     <string name="clock_settings">Polar clock settings</string>
     <!-- Polar clock: label for "show seconds" pref -->
     <string name="show_seconds">Show seconds</string>
-    <!-- Polar clock: label for "cycle colors" pref -->
-    <string name="cycle_colors">Cycle ring colors</string>
     <!-- Polar clock: label for "variable widths" pref -->
     <string name="variable_line_width">Vary ring widths</string>
+    <!-- Polar clock: label for "palette" pref -->
+    <string name="palette">Color palette</string>
+
+	<!-- Polar clock: palette name -->
+	<string name="palette_gray">Iron</string>
+	<!-- Polar clock: palette name -->
+	<string name="palette_violet">Midnight</string>
+	<!-- Polar clock: palette name -->
+	<string name="palette_matrix">Green Screen</string>
+	<!-- Polar clock: palette name -->
+	<string name="palette_white_c">Polar Bear (dynamic)</string>
+	<!-- Polar clock: palette name -->
+	<string name="palette_black_c">Black Hole (dynamic)</string>
+	<!-- Polar clock: palette name -->
+	<string name="palette_halloween">Pumpkin Pie</string>
+	<!-- Polar clock: palette name -->
+	<string name="palette_zenburn">Alien Fruit Salad</string>
+	<!-- Polar clock: palette name -->
+	<string name="palette_oceanic">Blue Laser</string>
+
 </resources>
