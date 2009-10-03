@@ -178,7 +178,8 @@ class FallRS extends RenderScriptScene {
     }
 
     private void createMesh() {
-        SimpleMesh.TriangleMeshBuilder tmb = new SimpleMesh.TriangleMeshBuilder(mRS, 3, true, true);
+        SimpleMesh.TriangleMeshBuilder tmb = new SimpleMesh.TriangleMeshBuilder(mRS, 3,
+            SimpleMesh.TriangleMeshBuilder.NORMAL | SimpleMesh.TriangleMeshBuilder.TEXTURE_0);
 
         int wResolution;
         int hResolution;
@@ -203,21 +204,17 @@ class FallRS extends RenderScriptScene {
         wResolution += 2;
         hResolution += 2;
 
+        tmb.setNormal(0.f, 0.f, -1.f);
         for (int y = 0; y <= hResolution; y++) {
             final boolean shift = (y & 0x1) == 0;
             final float yOffset = y * quadHeight - glHeight / 2.0f - quadHeight;
             final float t = 1.0f - y / (float) hResolution;
             for (int x = 0; x <= wResolution; x++) {
+                tmb.setTexture(x / (float) wResolution, t);
                 if (shift) {
-                    tmb.add_XYZ_ST_NORM(
-                            -1.0f + x * quadWidth - quadWidth, yOffset, 0.0f,
-                            x / (float) wResolution, t,
-                            0.0f, 0.0f, -1.0f);
+                    tmb.addVertex(-1.0f + x * quadWidth - quadWidth, yOffset, 0.0f);
                 } else {
-                    tmb.add_XYZ_ST_NORM(
-                            -1.0f + x * quadWidth - quadWidth * 0.5f, yOffset, 0.0f,
-                            x / (float) wResolution, t,
-                            0.0f, 0.0f, -1.0f);
+                    tmb.addVertex(-1.0f + x * quadWidth - quadWidth * 0.5f, yOffset, 0.0f);
                 }
             }
         }
