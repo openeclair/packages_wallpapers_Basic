@@ -15,7 +15,7 @@
 #pragma version(1)
 #pragma stateVertex(PVBackground)
 #pragma stateFragment(PFBackground)
-#pragma stateFragmentStore(PFSBackground)
+#pragma stateStore(PFSBackground)
 
 #define RSID_STATE 0
 #define RSID_BLADES 1

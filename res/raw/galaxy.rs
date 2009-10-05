@@ -16,7 +16,7 @@
 #pragma stateVertex(PVBackground)
 #pragma stateRaster(parent)
 #pragma stateFragment(PFBackground)
-#pragma stateFragmentStore(PFSBackground)
+#pragma stateStore(PFSBackground)
 
 #define ELLIPSE_RATIO 0.892f
 
