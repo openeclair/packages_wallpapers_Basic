@@ -16,14 +16,12 @@
 
 package com.android.wallpaper.fall;
 
-import android.renderscript.RenderScript;
 import android.renderscript.ScriptC;
 import android.renderscript.ProgramFragment;
 import android.renderscript.ProgramStore;
 import android.renderscript.ProgramVertex;
 import android.renderscript.Allocation;
 import android.renderscript.Sampler;
-import android.renderscript.Element;
 import android.renderscript.Light;
 import android.renderscript.Type;
 import android.renderscript.SimpleMesh;
@@ -142,11 +140,10 @@ class FallRS extends RenderScriptScene {
 
         mWorldState.width = width;
         mWorldState.height = height;
+        mWorldState.rotate = 1;
         mState.data(mWorldState);
 
-        mPvOrthoAlloc.setupOrthoWindow(mWidth, mHeight);
-
-        // TODO: Resize everything else, including the mesh and glHeight
+        mPvOrthoAlloc.setupOrthoWindow(width, height);
     }
 
     @Override
@@ -290,6 +287,7 @@ class FallRS extends RenderScriptScene {
         public float glHeight;
         public float skySpeedX;
         public float skySpeedY;
+        public int rotate;
     }
 
     static class DropState {
@@ -310,6 +308,7 @@ class FallRS extends RenderScriptScene {
         mWorldState.glHeight = mGlHeight;
         mWorldState.skySpeedX = random(-0.001f, 0.001f);
         mWorldState.skySpeedY = random(0.00008f, 0.0002f);
+        mWorldState.rotate = mWidth > mHeight ? 1 : 0;
 
         mStateType = Type.createFromClass(mRS, WorldState.class, 1, "WorldState");
         mState = Allocation.createTyped(mRS, mStateType);

@@ -47,8 +47,8 @@
 // The higher, the smaller the ripple
 #define RIPPLE_HEIGHT 10.0f
 
-float g_SkyOffsetX;
-float g_SkyOffsetY;
+float skyOffsetX;
+float skyOffsetY;
 
 struct vert_s {
     float nx;
@@ -235,35 +235,6 @@ void generateRipples() {
     }
 }
 
-float averageZ(float x1, float x2, float y1, float y2, float* vertices,
-        int meshWidth, int meshHeight, float glWidth, float glHeight) {
-
-    x1 = ((x1 + glWidth * 0.5f) / glWidth) * meshWidth;
-    x2 = ((x2 + glWidth * 0.5f) / glWidth) * meshWidth;
-    y1 = ((y1 + glHeight * 0.5f) / glHeight) * meshHeight;
-    y2 = ((y2 + glHeight * 0.5f) / glHeight) * meshHeight;
-
-    int quadX1 = clamp(x1, 0, meshWidth);
-    int quadX2 = clamp(x2, 0, meshWidth);
-    int quadY1 = clamp(y1, 0, meshHeight);
-    int quadY2 = clamp(y2, 0, meshHeight);
-
-    float z = 0.0f;
-    int vertexCount = 0;
-
-    int y = quadY1;
-    for ( ; y < quadY2; y += 1) {
-        int x = quadX1;
-        int yOffset = y * meshWidth;
-        for ( ; x < quadX2; x += 1) {
-            z += vertices[(yOffset + x) << 3 + 7];
-            vertexCount += 1;
-        }
-    }
-
-    return 55.0f * z / vertexCount;
-}
-
 void drawLeaf(int index, float* vertices, int meshWidth, int meshHeight,
         float glWidth, float glHeight) {
 
@@ -292,11 +263,6 @@ void drawLeaf(int index, float* vertices, int meshWidth, int meshHeight,
     float tz = 0.0f;
     if (a > 0.0f) {
         tz = -a;
-    } else {
-//        z1 = averageZ(x1, x, y1, y, vertices, meshWidth, meshHeight, glWidth, glHeight);
-//        z2 = averageZ(x, x2, y1, y, vertices, meshWidth, meshHeight, glWidth, glHeight);
-//        z3 = averageZ(x, x2, y, y2, vertices, meshWidth, meshHeight, glWidth, glHeight);
-//        z4 = averageZ(x1, x, y, y2, vertices, meshWidth, meshHeight, glWidth, glHeight);
     }
 
     x1 -= x;
@@ -395,15 +361,15 @@ void drawSky() {
     bindProgramFragmentStore(NAMED_PFSLeaf);
     bindTexture(NAMED_PFSky, 0, NAMED_TSky);
 
-    float x = g_SkyOffsetX + State->skySpeedX;
-    float y = g_SkyOffsetY + State->skySpeedY;
+    float x = skyOffsetX + State->skySpeedX;
+    float y = skyOffsetY + State->skySpeedY;
 
     if (x > 1.0f) x = 0.0f;
     if (x < -1.0f) x = 0.0f;
     if (y > 1.0f) y = 0.0f;
 
-    g_SkyOffsetX = x;
-    g_SkyOffsetY = y;
+    skyOffsetX = x;
+    skyOffsetY = y;
 
     float matrix[16];
     matrixLoadTranslate(matrix, x, y, 0.0f);

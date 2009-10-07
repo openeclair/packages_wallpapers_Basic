@@ -90,6 +90,7 @@ class GrassRS extends RenderScriptScene {
     private int mTriangles;
     private final float[] mFloatData5 = new float[5];
     private WorldState mWorldState;
+    private float[] mBladesData;
 
     GrassRS(int width, int height) {
         super(width, height);
@@ -103,9 +104,13 @@ class GrassRS extends RenderScriptScene {
         mWorldState.height = height;
         mState.data(mWorldState);
 
-        mPvOrthoAlloc.setupOrthoWindow(mWidth, mHeight);
+        final float[] blades = mBladesData;
+        for (int i = 0; i < blades.length; i+= BLADE_STRUCT_FIELDS_COUNT) {
+            updateBlade(blades, i);
+        }
+        mBlades.data(blades);
 
-        // TODO: REPOSITION BLADES
+        mPvOrthoAlloc.setupOrthoWindow(width, height);        
     }
 
     @Override
@@ -166,7 +171,9 @@ class GrassRS extends RenderScriptScene {
     private void createBlades() {
         int triangles = 0;
 
-        final float[] blades = new float[BLADES_COUNT * BLADE_STRUCT_FIELDS_COUNT];
+        mBladesData = new float[BLADES_COUNT * BLADE_STRUCT_FIELDS_COUNT];
+
+        final float[] blades = mBladesData;
         for (int i = 0; i < blades.length; i+= BLADE_STRUCT_FIELDS_COUNT) {
             triangles += createBlade(blades, i);
         }
@@ -232,6 +239,13 @@ class GrassRS extends RenderScriptScene {
             buffer.subData1D(bufferIndex, 1, floatData);
             bufferIndex++;
         }
+    }
+
+    private void updateBlade(float[] blades, int index) {
+        final int xpos = random(-mWidth, mWidth);
+        blades[index + BLADE_STRUCT_XPOS] = xpos;
+        blades[index + BLADE_STRUCT_TURBULENCEX] = xpos * 0.006f;
+        blades[index + BLADE_STRUCT_YPOS] = mHeight;
     }
 
     private int createBlade(float[] blades, int index) {
