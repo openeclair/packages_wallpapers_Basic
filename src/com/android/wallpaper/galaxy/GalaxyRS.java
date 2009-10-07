@@ -89,6 +89,7 @@ class GalaxyRS extends RenderScriptScene {
     private Allocation mParticlesBuffer;
     @SuppressWarnings({"FieldCanBeLocal"})
     private SimpleMesh mParticlesMesh;
+    private ScriptC.Invokable mInitParticles;
 
     GalaxyRS(int width, int height) {
         super(width, height);
@@ -110,18 +111,18 @@ class GalaxyRS extends RenderScriptScene {
         sb.setType(mStateType, "State", RSID_STATE);
         sb.setType(mParticlesMesh.getVertexType(0), "Particles", RSID_PARTICLES_BUFFER);
         sb.setType(mParticlesType, "Stars", RSID_PARTICLES);
-        ScriptC.Invokable initParticles = sb.addInvokable("initParticles");
+        mInitParticles = sb.addInvokable("initParticles");
         sb.setScript(mResources, R.raw.galaxy);
         sb.setRoot(true);
 
         ScriptC script = sb.create();
-        script.setClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+        script.setClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         script.setTimeZone(TimeZone.getDefault().getID());
 
         script.bindAllocation(mState, RSID_STATE);
         script.bindAllocation(mParticles, RSID_PARTICLES);
         script.bindAllocation(mParticlesBuffer, RSID_PARTICLES_BUFFER);
-        initParticles.execute();
+        mInitParticles.execute();
 
         return script;
     }
@@ -162,9 +163,11 @@ class GalaxyRS extends RenderScriptScene {
 
         mGalaxyState.width = width;
         mGalaxyState.height = height;
+        mGalaxyState.scale = width > height ? 1 : 0;
         mState.data(mGalaxyState);
 
         mPvOrthoAlloc.setupOrthoWindow(mWidth, mHeight);
+        mInitParticles.execute();
     }
 
     static class GalaxyState {
@@ -174,6 +177,7 @@ class GalaxyRS extends RenderScriptScene {
         public int galaxyRadius;
         public float xOffset;
         public int isPreview;
+        public int scale;
     }
 
     static class GalaxyParticle {
@@ -190,6 +194,7 @@ class GalaxyRS extends RenderScriptScene {
         mGalaxyState = new GalaxyState();
         mGalaxyState.width = mWidth;
         mGalaxyState.height = mHeight;
+        mGalaxyState.scale = mWidth > mHeight ? 1 : 0;
         mGalaxyState.particlesCount = PARTICLES_COUNT;
         mGalaxyState.galaxyRadius = GALAXY_RADIUS;
         mGalaxyState.isPreview = isPreview ? 1 : 0;

@@ -25,14 +25,12 @@
 #define ELLIPSE_TWIST 0.023333333f
 
 float angle;
-float distance;
 
 /**
  * Script initialization. Called automatically.
  */
 void init() {
-    angle = 37.0f;
-    distance = 0.55f;
+    angle = 50.0f;
 }
 
 /**
@@ -96,6 +94,10 @@ void createParticle(struct Stars_s *star, struct Particles_s *part, float scale)
  * Initialize all the stars. Called from Java.
  */
 void initParticles() {
+    if (State->isPreview == 1) {
+        angle = 0.0f;
+    }
+
     struct Stars_s *star = Stars;
     struct Particles_s *part = Particles;
     int particlesCount = State->particlesCount;
@@ -135,20 +137,28 @@ void drawLights(float xOffset, int width, int height) {
              x, y + scale, 0.0f);
 }
 
-void drawParticles(float xOffset, int width, int height) {
+void drawParticles(float xOffset, float offset, int width, int height) {
     bindProgramVertex(NAMED_PVStars);
     bindProgramFragment(NAMED_PFStars);
     bindProgramFragmentStore(NAMED_PFSLights);
     bindTexture(NAMED_PFStars, 0, NAMED_TFlares);
 
+    float a = offset * angle;
+    float absoluteAngle = fabsf(a);
+
     float matrix[16];
-    matrixLoadTranslate(matrix, 0.0f, 0.0f, 10.0f - 6.0f * distance);
-    matrixScale(matrix, 6.6f, 6.0f, 1.0f);
-    matrixRotate(matrix, angle, 1.0f, 0.5f, 0.0f);
+    matrixLoadTranslate(matrix, 0.0f, 0.0f, 10.0f - 6.0f * absoluteAngle / 50.0f);
+    if (State->scale == 0) {
+        matrixScale(matrix, 6.6f, 6.0f, 1.0f);
+    } else {
+        matrixScale(matrix, 7.6f, 16.0f, 1.0f);
+    }
+    matrixRotate(matrix, absoluteAngle, 1.0f, 0.0f, 0.0f);
+    matrixRotate(matrix, a, 0.0f, 0.4f, 0.1f);
     vpLoadModelMatrix(matrix);
 
     // quadratic attenuation
-    pointAttenuation(0.1f, 0.0f, 0.06f);
+    pointAttenuation(0.1f + 0.3f * fabsf(offset), 0.0f, 0.06f  + 0.1f *  fabsf(offset));
 
     int radius = State->galaxyRadius;
     int particlesCount = State->particlesCount;
@@ -179,24 +189,13 @@ int main(int index) {
     int width = State->width;
     int height = State->height;
 
-    float x = lerpf(1.0f, -1.0f, State->xOffset);
+    float x = 0.0f;
+    float offset = lerpf(-1.0f, 1.0f, State->xOffset);
 
     drawSpace(x, width, height);
-    drawParticles(x, width, height);
-    drawLights(x, width, height);
 
-    if (State->isPreview == 0) {
-        if (angle > 0.0f) {
-            angle -= 0.4f;
-            distance = angle / 68.0f;
-        }
-    } else {
-        // Unfortunately this cannot happen in init()
-        // since the State structure instance does not
-        // exist at this point
-        angle = 0.0f;
-        distance = 0.0f;
-    }
+    drawParticles(x, offset, width, height);
+    drawLights(x, width, height);
 
     return 1;
 }
