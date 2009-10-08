@@ -51,14 +51,14 @@ float skyOffsetX;
 float skyOffsetY;
 
 struct vert_s {
-    float nx;
-    float ny;
-    float nz;
-    float s;
-    float t;
     float x;
     float y;
     float z;
+    float s;
+    float t;
+    float nx;
+    float ny;
+    float nz;
 };
 
 int offset(int x, int y, int width) {
@@ -206,12 +206,13 @@ void generateRipples() {
 
     // Compute the normals for lighting
     int y = 0;
-    for ( ; y < height; y += 1) {
+    for ( ; y < (height-1); y += 1) {
         int x = 0;
         int yOffset = y * width;
         struct vert_s *v = vert;
+        v += y * width;
 
-        for ( ; x < width; x += 1) {
+        for ( ; x < (width-1); x += 1) {
             struct vec3_s n1, n2, n3;
             vec3Sub(&n1, (struct vec3_s *)&(v+1)->x, (struct vec3_s *)&v->x);
             vec3Sub(&n2, (struct vec3_s *)&(v+width)->x, (struct vec3_s *)&v->x);
