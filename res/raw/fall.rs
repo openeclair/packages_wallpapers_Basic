@@ -17,24 +17,8 @@
 #pragma stateFragment(PFBackground)
 #pragma stateStore(PFSBackground)
 
-#define RSID_STATE 0
 #define RSID_RIPPLE_MAP 1
 #define RSID_REFRACTION_MAP 2
-#define RSID_LEAVES 3
-#define RSID_DROP 4
-
-#define LEAF_STRUCT_FIELDS_COUNT 11
-#define LEAF_STRUCT_X 0
-#define LEAF_STRUCT_Y 1
-#define LEAF_STRUCT_SCALE 2
-#define LEAF_STRUCT_ANGLE 3
-#define LEAF_STRUCT_SPIN 4
-#define LEAF_STRUCT_U1 5
-#define LEAF_STRUCT_U2 6
-#define LEAF_STRUCT_ALTITUDE 7
-#define LEAF_STRUCT_RIPPLED 8
-#define LEAF_STRUCT_DELTAX 9
-#define LEAF_STRUCT_DELTAY 10
 
 #define LEAVES_TEXTURES_COUNT 4
 
@@ -63,6 +47,29 @@ struct vert_s {
 
 int offset(int x, int y, int width) {
     return x + 1 + (y + 1) * (width + 2);
+}
+
+void initLeaves() {
+    struct Leaves_s *leaf = Leaves;
+    int leavesCount = State->leavesCount;
+    float height = State->glHeight;
+
+    int i;
+    for (i = 0; i < leavesCount; i ++) {
+        int sprite = randf(LEAVES_TEXTURES_COUNT);
+        leaf->x = randf2(-1.0f, 1.0f);
+        leaf->y = randf2(-height / 2.0f, height / 2.0f);
+        leaf->scale = randf2(0.4f, 0.5f);
+        leaf->angle = randf2(0.0f, 360.0f);
+        leaf->spin = degf(randf2(-0.02f, 0.02f)) / 4.0f;
+        leaf->u1 = sprite / (float) LEAVES_TEXTURES_COUNT;
+        leaf->u2 = (sprite + 1) / (float) LEAVES_TEXTURES_COUNT;
+        leaf->altitude = -1.0f;
+        leaf->rippled = 1.0f;
+        leaf->deltaX = randf2(-0.02f, 0.02f) / 60.0f;
+        leaf->deltaY = -0.08f * randf2(0.9f, 1.1f) / 60.0f;
+        leaf++;
+    }
 }
 
 void dropWithStrength(int x, int y, int r, int s) {
@@ -117,7 +124,7 @@ void updateRipples() {
     int* current = loadArrayI32(RSID_RIPPLE_MAP, index * rippleMapSize + origin);
     int* next = loadArrayI32(RSID_RIPPLE_MAP, (1 - index) * rippleMapSize + origin);
 
-    storeI32(RSID_STATE, OFFSETOF_WorldState_rippleIndex, 1 - index);
+    State->rippleIndex = 1 - index;
 
     int a = 1;
     int b = width + 2;
@@ -126,8 +133,7 @@ void updateRipples() {
         int w = width;
         while (w) {
             int droplet = ((current[-b] + current[b] + current[-a] + current[a]) >> 1) - *next;
-            droplet -= (droplet >> DAMP);
-            *next = droplet;
+            *next = droplet - (droplet >> DAMP);
             current += 1;
             next += 1;
             w -= 1;
@@ -152,7 +158,7 @@ int refraction(int d, int wave, int *map) {
 }
 
 void generateRipples() {
-    int rippleMapSize = loadI32(RSID_STATE, OFFSETOF_WorldState_rippleMapSize);
+    int rippleMapSize = State->rippleMapSize;
     int width = State->meshWidth;
     int height = State->meshHeight;
     int index = State->rippleIndex;
@@ -165,8 +171,8 @@ void generateRipples() {
     float *vertices = loadSimpleMeshVerticesF(NAMED_WaterMesh, 0);
     struct vert_s *vert = (struct vert_s *)vertices;
 
-    float fw = 1.f / width;
-    float fh = 1.f / height;
+    float fw = 1.0f / width;
+    float fh = 1.0f / height;
     float fy = (1.0f / 512.0f) * (1.0f / RIPPLE_HEIGHT);
 
     int h = height - 1;
@@ -236,30 +242,26 @@ void generateRipples() {
     }
 }
 
-void drawLeaf(int index, float* vertices, int meshWidth, int meshHeight,
-        float glWidth, float glHeight) {
-
-    float *leafStruct = loadArrayF(RSID_LEAVES, index);
-
-    float x = leafStruct[LEAF_STRUCT_X];
+void drawLeaf(struct Leaves_s *leaf, int meshWidth, int meshHeight, float glWidth, float glHeight) {
+    float x = leaf->x;
     float x1 = x - LEAF_SIZE;
     float x2 = x + LEAF_SIZE;
 
-    float y = leafStruct[LEAF_STRUCT_Y];
+    float y = leaf->y;
     float y1 = y - LEAF_SIZE;
     float y2 = y + LEAF_SIZE;
 
-    float u1 = leafStruct[LEAF_STRUCT_U1];
-    float u2 = leafStruct[LEAF_STRUCT_U2];
+    float u1 = leaf->u1;
+    float u2 = leaf->u2;
 
     float z1 = 0.0f;
     float z2 = 0.0f;
     float z3 = 0.0f;
     float z4 = 0.0f;
 
-    float a = leafStruct[LEAF_STRUCT_ALTITUDE];
-    float s = leafStruct[LEAF_STRUCT_SCALE];
-    float r = leafStruct[LEAF_STRUCT_ANGLE];
+    float a = leaf->altitude;
+    float s = leaf->scale;
+    float r = leaf->angle;
 
     float tz = 0.0f;
     if (a > 0.0f) {
@@ -270,8 +272,30 @@ void drawLeaf(int index, float* vertices, int meshWidth, int meshHeight,
     x2 -= x;
     y1 -= y;
     y2 -= y;
+    
+    float matrix[16];    
 
-    float matrix[16];
+    if (a > 0.0f) {
+        color(0.0f, 0.0f, 0.0f, 0.15f);
+    
+        matrixLoadIdentity(matrix);
+        matrixTranslate(matrix, x, y, 0.0f);
+        matrixScale(matrix, s, s, 1.0f);
+        matrixRotate(matrix, r, 0.0f, 0.0f, 1.0f);
+        vpLoadModelMatrix(matrix);
+
+        drawQuadTexCoords(x1, y1, z1, u1, 1.0f,
+                          x2, y1, z2, u2, 1.0f,
+                          x2, y2, z3, u2, 0.0f,
+                          x1, y2, z4, u1, 0.0f);
+
+        float alpha = 1.0f;
+        if (a >= 0.4f) alpha = 1.0f - (a - 0.5f) / 0.1f;
+        color(1.0f, 1.0f, 1.0f, alpha);
+    } else {
+        color(1.0f, 1.0f, 1.0f, 1.0f);
+    }
+
     matrixLoadIdentity(matrix);
     matrixTranslate(matrix, x, y, tz);
     matrixScale(matrix, s, s, 1.0f);
@@ -283,65 +307,64 @@ void drawLeaf(int index, float* vertices, int meshWidth, int meshHeight,
                       x2, y2, z3, u2, 0.0f,
                       x1, y2, z4, u1, 0.0f);
 
-    float spin = leafStruct[LEAF_STRUCT_SPIN];
+    float spin = leaf->spin;
     if (a <= 0.0f) {
-        float rippled = leafStruct[LEAF_STRUCT_RIPPLED];
+        float rippled = leaf->rippled;
         if (rippled < 0.0f) {
             drop(((x + glWidth * 0.5f) / glWidth) * meshWidth,
-                 meshHeight - ((y + glHeight * 0.5f) / glHeight) * meshHeight,
-                 DROP_RADIUS);
+                 meshHeight - ((y + glHeight * 0.5f) / glHeight) * meshHeight, 1);
             spin /= 4.0f;
-            leafStruct[LEAF_STRUCT_SPIN] = spin;
-            leafStruct[LEAF_STRUCT_RIPPLED] = 1.0f;
-        } else {
-//            dropWithStrength(((x + glWidth / 2.0f) / glWidth) * meshWidth,
-//                meshHeight - ((y + glHeight / 2.0f) / glHeight) * meshHeight,
-//                2, 5);
+            leaf->spin = spin;
+            leaf->rippled = 1.0f;
         }
-        leafStruct[LEAF_STRUCT_X] = x + leafStruct[LEAF_STRUCT_DELTAX];
-        leafStruct[LEAF_STRUCT_Y] = y + leafStruct[LEAF_STRUCT_DELTAY];
+        leaf->x = x + leaf->deltaX;
+        leaf->y = y + leaf->deltaY;
         r += spin;
-        leafStruct[LEAF_STRUCT_ANGLE] = r;
+        leaf->angle = r;
     } else {
         a -= 0.005f;
-        leafStruct[LEAF_STRUCT_ALTITUDE] = a;
+        leaf->altitude = a;
         r += spin * 2.0f;
-        leafStruct[LEAF_STRUCT_ANGLE] = r;
+        leaf->angle = r;
     }
 
     if (-LEAF_SIZE * s + x > glWidth / 2.0f || LEAF_SIZE * s + x < -glWidth / 2.0f ||
-        LEAF_SIZE * s + y < -glHeight / 2.0f) {
+            LEAF_SIZE * s + y < -glHeight / 2.0f) {
 
         int sprite = randf(LEAVES_TEXTURES_COUNT);
-        leafStruct[LEAF_STRUCT_X] = randf2(-1.0f, 1.0f);
-        leafStruct[LEAF_STRUCT_Y] = glHeight / 2.0f + LEAF_SIZE * 2 * randf(1.0f);
-        leafStruct[LEAF_STRUCT_SCALE] = randf2(0.4f, 0.5f);
-        leafStruct[LEAF_STRUCT_SPIN] = degf(randf2(-0.02f, 0.02f)) / 4.0f;
-        leafStruct[LEAF_STRUCT_U1] = sprite / (float) LEAVES_TEXTURES_COUNT;
-        leafStruct[LEAF_STRUCT_U2] = (sprite + 1) / (float) LEAVES_TEXTURES_COUNT;
-        leafStruct[LEAF_STRUCT_DELTAX] = randf2(-0.02f, 0.02f) / 60.0f;
-        leafStruct[LEAF_STRUCT_DELTAY] = -0.08f * randf2(0.9f, 1.1f) / 60.0f;
+        leaf->x = randf2(-1.0f, 1.0f);
+        leaf->y = randf2(-glHeight / 2.0f, glHeight / 2.0f);
+        leaf->scale = randf2(0.4f, 0.5f);
+        leaf->spin = degf(randf2(-0.02f, 0.02f)) / 4.0f;
+        leaf->u1 = sprite / (float) LEAVES_TEXTURES_COUNT;
+        leaf->u2 = (sprite + 1) / (float) LEAVES_TEXTURES_COUNT;
+        leaf->altitude = 0.6f;
+        leaf->rippled = -1.0f;
+        leaf->deltaX = randf2(-0.02f, 0.02f) / 60.0f;
+        leaf->deltaY = -0.08f * randf2(0.9f, 1.1f) / 60.0f;
     }
 }
 
 void drawLeaves() {
-    bindProgramFragment(NAMED_PFBackground);
+    bindProgramFragment(NAMED_PFSky);
     bindProgramFragmentStore(NAMED_PFSLeaf);
     bindProgramVertex(NAMED_PVSky);
-    bindTexture(NAMED_PFBackground, 0, NAMED_TLeaves);
+    bindTexture(NAMED_PFSky, 0, NAMED_TLeaves);
+
+    color(1.0f, 1.0f, 1.0f, 1.0f);
 
     int leavesCount = State->leavesCount;
-    int count = leavesCount * LEAF_STRUCT_FIELDS_COUNT;
     int width = State->meshWidth;
     int height = State->meshHeight;
     float glWidth = State->glWidth;
     float glHeight = State->glHeight;
 
-    float *vertices = loadSimpleMeshVerticesF(NAMED_WaterMesh, 0);
+    struct Leaves_s *leaf = Leaves;
 
     int i = 0;
-    for ( ; i < count; i += LEAF_STRUCT_FIELDS_COUNT) {
-        drawLeaf(i, vertices, width, height, glWidth, glHeight);
+    for ( ; i < leavesCount; i += 1) {
+        drawLeaf(leaf, width, height, glWidth, glHeight);
+        leaf += 1;
     }
 
     float matrix[16];

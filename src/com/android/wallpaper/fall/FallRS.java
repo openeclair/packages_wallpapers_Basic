@@ -25,6 +25,7 @@ import android.renderscript.Sampler;
 import android.renderscript.Light;
 import android.renderscript.Type;
 import android.renderscript.SimpleMesh;
+import android.renderscript.Script;
 import static android.renderscript.Sampler.Value.LINEAR;
 import static android.renderscript.Sampler.Value.WRAP;
 import static android.renderscript.ProgramStore.DepthFunc.*;
@@ -47,45 +48,16 @@ class FallRS extends RenderScriptScene {
     private static final int RSID_STATE = 0;
 
     private static final int TEXTURES_COUNT = 3;
-    private static final int LEAVES_TEXTURES_COUNT = 4;
     private static final int RSID_TEXTURE_RIVERBED = 0;
     private static final int RSID_TEXTURE_LEAVES = 1;
     private static final int RSID_TEXTURE_SKY = 2;
 
     private static final int RSID_RIPPLE_MAP = 1;
-
     private static final int RSID_REFRACTION_MAP = 2;
-
     private static final int RSID_LEAVES = 3;
-    private static final int LEAVES_COUNT = 14;
-    private static final int LEAF_STRUCT_FIELDS_COUNT = 11;
-    private static final int LEAF_STRUCT_X = 0;
-    private static final int LEAF_STRUCT_Y = 1;
-    private static final int LEAF_STRUCT_SCALE = 2;
-    private static final int LEAF_STRUCT_ANGLE = 3;
-    private static final int LEAF_STRUCT_SPIN = 4;
-    private static final int LEAF_STRUCT_U1 = 5;
-    private static final int LEAF_STRUCT_U2 = 6;
-    private static final int LEAF_STRUCT_ALTITUDE = 7;
-    private static final int LEAF_STRUCT_RIPPLED = 8;
-    private static final int LEAF_STRUCT_DELTAX = 9;
-    private static final int LEAF_STRUCT_DELTAY = 10;
-
-    class Leaf {
-        float x;
-        float y;
-        float scale;
-        float angle;
-        float spin;
-        float u1;
-        float u2;
-        float altitude;
-        float rippled;
-        float deltaX;
-        float deltaY;
-    }
-
     private static final int RSID_DROP = 4;
+
+    private static final int LEAVES_COUNT = 14;
 
     private final BitmapFactory.Options mOptionsARGB = new BitmapFactory.Options();
 
@@ -125,6 +97,8 @@ class FallRS extends RenderScriptScene {
     private Allocation mRefractionMap;
 
     private Allocation mLeaves;
+    private Type mLeavesType;
+    
     private float mGlHeight;
 
     public FallRS(int width, int height) {
@@ -158,7 +132,9 @@ class FallRS extends RenderScriptScene {
         ScriptC.Builder sb = new ScriptC.Builder(mRS);
         sb.setType(mStateType, "State", RSID_STATE);
         sb.setType(mDropType, "Drop", RSID_DROP);
+        sb.setType(mLeavesType, "Leaves", RSID_LEAVES);
         sb.setScript(mResources, R.raw.fall);
+        Script.Invokable invokable = sb.addInvokable("initLeaves");
         sb.setRoot(true);
 
         ScriptC script = sb.create();
@@ -170,6 +146,8 @@ class FallRS extends RenderScriptScene {
         script.bindAllocation(mRefractionMap, RSID_REFRACTION_MAP);
         script.bindAllocation(mLeaves, RSID_LEAVES);
         script.bindAllocation(mDropState, RSID_DROP);
+
+        invokable.execute();
 
         return script;
     }
@@ -249,12 +227,8 @@ class FallRS extends RenderScriptScene {
     }
 
     private void createLeaves() {
-        final float[] leaves = new float[LEAVES_COUNT * LEAF_STRUCT_FIELDS_COUNT];
-        mLeaves = Allocation.createSized(mRS, USER_F32(mRS), leaves.length);
-        for (int i = 0; i < leaves.length; i += LEAF_STRUCT_FIELDS_COUNT) {
-            createLeaf(leaves, i);
-        }
-        mLeaves.data(leaves);
+        mLeavesType = Type.createFromClass(mRS, Leaf.class, LEAVES_COUNT, "Leaf");
+        mLeaves = Allocation.createTyped(mRS, mLeavesType);        
     }
 
     private void createRefractionMap() {
@@ -323,21 +297,19 @@ class FallRS extends RenderScriptScene {
         mDropState.data(mDrop);
     }
 
-    private void createLeaf(float[] leaves, int index) {
-        int sprite = random(LEAVES_TEXTURES_COUNT);
-        //noinspection PointlessArithmeticExpression
-        leaves[index + LEAF_STRUCT_X] = random(-1.0f, 1.0f);
-        leaves[index + LEAF_STRUCT_Y] = random(-mGlHeight / 2.0f, mGlHeight / 2.0f);
-        leaves[index + LEAF_STRUCT_SCALE] = random(0.4f, 0.5f);
-        leaves[index + LEAF_STRUCT_ANGLE] = random(0.0f, 360.0f);
-        leaves[index + LEAF_STRUCT_SPIN] = degrees(random(-0.02f, 0.02f)) / 4.0f;
-        leaves[index + LEAF_STRUCT_U1] = sprite / (float) LEAVES_TEXTURES_COUNT;
-        leaves[index + LEAF_STRUCT_U2] = (sprite + 1) / (float) LEAVES_TEXTURES_COUNT;
-        leaves[index + LEAF_STRUCT_ALTITUDE] = -1.0f;
-        leaves[index + LEAF_STRUCT_RIPPLED] = 1.0f;
-        leaves[index + LEAF_STRUCT_DELTAX] = random(-0.02f, 0.02f) / 60.0f;
-        leaves[index + LEAF_STRUCT_DELTAY] = -0.08f * random(0.9f, 1.1f) / 60.0f;
-    }
+    static class Leaf {
+        public float x;
+        public float y;
+        public float scale;
+        public float angle;
+        public float spin;
+        public float u1;
+        public float u2;
+        public float altitude;
+        public float rippled;
+        public float deltaX;
+        public float deltaY;
+    }    
 
     private void loadTextures() {
         final Allocation[] textures = new Allocation[TEXTURES_COUNT];
@@ -347,8 +319,7 @@ class FallRS extends RenderScriptScene {
 
         final int count = textures.length;
         for (int i = 0; i < count; i++) {
-            final Allocation texture = textures[i];
-            texture.uploadToTexture(0);
+            textures[i].uploadToTexture(0);
         }
     }
 
