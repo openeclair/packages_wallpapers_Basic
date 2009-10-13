@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package com.android.wallpaper;
 
 import android.service.wallpaper.WallpaperService;

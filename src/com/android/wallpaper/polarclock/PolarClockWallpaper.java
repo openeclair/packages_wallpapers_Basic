@@ -29,7 +29,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.XmlResourceParser;
-import android.preference.ListPreference;
 
 import android.os.Handler;
 import android.os.SystemClock;
@@ -108,7 +107,6 @@ public class PolarClockWallpaper extends WallpaperService {
 
         private FixedClockPalette() { }
 
-        @Override
         public static ClockPalette parseXmlPaletteTag(XmlResourceParser xrp) {
             final FixedClockPalette pal = new FixedClockPalette();
             pal.mId = xrp.getAttributeValue(null, "id");
@@ -199,7 +197,6 @@ public class PolarClockWallpaper extends WallpaperService {
             }
         }
 
-        @Override
         public static ClockPalette parseXmlPaletteTag(XmlResourceParser xrp) {
             final CyclingClockPalette pal = new CyclingClockPalette();
             pal.mId = xrp.getAttributeValue(null, "id");
