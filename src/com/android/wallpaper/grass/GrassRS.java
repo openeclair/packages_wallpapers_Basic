@@ -217,14 +217,21 @@ class GrassRS extends RenderScriptScene {
         public float morning;
         public float afternoon;
         public float dusk;
+        public int isPreview;
     }
 
     private void createState() {
+        final boolean isPreview = isPreview();
+
         mWorldState = new WorldState();
         mWorldState.width = mWidth;
         mWorldState.height = mHeight;
         mWorldState.bladesCount = BLADES_COUNT;
         mWorldState.trianglesCount = mTriangles;
+        mWorldState.isPreview = isPreview ? 1 : 0;
+        if (isPreview) {
+            mWorldState.xOffset = 0.5f;
+        }
 
         mStateType = Type.createFromClass(mRS, WorldState.class, 1, "WorldState");
         mState = Allocation.createTyped(mRS, mStateType);

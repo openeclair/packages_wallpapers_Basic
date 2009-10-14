@@ -48,11 +48,11 @@
 
 #define REAL_TIME 1
 
-float time() {
-    if (REAL_TIME) {
+float time(int isPreview) {
+    if (REAL_TIME && !isPreview) {
         return (hour() * 3600.0f + minute() * 60.0f + second()) / SECONDS_IN_DAY;
     }
-    float t = uptimeMillis() / 40000.0f;
+    float t = uptimeMillis() / 30000.0f;
     return t - (int) t;
 }
 
@@ -89,7 +89,7 @@ void drawSunset(int width, int height) {
 }
 
 int drawBlade(float *bladeStruct, float *bladeBuffer, int *bladeColor,
-        float brightness, float xOffset) {
+        float brightness, float xOffset, float now) {
 
     float offset = bladeStruct[BLADE_STRUCT_OFFSET];
     float scale = bladeStruct[BLADE_STRUCT_SCALE];
@@ -111,8 +111,7 @@ int drawBlade(float *bladeStruct, float *bladeBuffer, int *bladeColor,
 
     int color = hsbToAbgr(h, s, lerpf(0, b, brightness), 1.0f);
 
-    float newAngle = turbulencef2(turbulenceX, uptimeMillis() * 0.00004f, 4.0f) - 0.5f;
-    newAngle *= 0.5f;
+    float newAngle = (turbulencef2(turbulenceX, now, 4.0f) - 0.5f) * 0.5f;
     angle = clampf(angle + (newAngle + offset - angle) * 0.15f, -MAX_BEND, MAX_BEND);
 
     float currentAngle = HALF_PI;
@@ -198,9 +197,11 @@ void drawBlades(float brightness, float xOffset) {
     float *bladeStruct = loadArrayF(RSID_BLADES, 0);
     float *bladeBuffer = loadArrayF(RSID_BLADES_BUFFER, 0);
     int *bladeColor = loadArrayI32(RSID_BLADES_BUFFER, 0);
+    
+    float now = uptimeMillis() * 0.00004f;
 
     for ( ; i < bladesCount; i += 1) {
-        int offset = drawBlade(bladeStruct, bladeBuffer, bladeColor, brightness, xOffset);
+        int offset = drawBlade(bladeStruct, bladeBuffer, bladeColor, brightness, xOffset, now);
         bladeBuffer += offset;
         bladeColor += offset;
         bladeStruct += BLADE_STRUCT_FIELDS_COUNT;
@@ -216,7 +217,7 @@ int main(int launchID) {
 
     float x = lerpf(width, 0, State->xOffset);
 
-    float now = time();
+    float now = time(State->isPreview);
     alpha(1.0f);
 
     float newB = 1.0f;

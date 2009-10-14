@@ -34,6 +34,7 @@ import android.os.Handler;
 import android.os.SystemClock;
 import android.text.format.Time;
 import android.util.MathUtils;
+import android.util.Log;
 
 import java.util.HashMap;
 import java.util.TimeZone;
@@ -45,13 +46,15 @@ import static org.xmlpull.v1.XmlPullParser.*;
 import com.android.wallpaper.R;
 
 public class PolarClockWallpaper extends WallpaperService {
-    public static final String SHARED_PREFS_NAME = "polar_clock_settings";
+    private static final String LOG_TAG = "PolarClock";
+    
+    static final String SHARED_PREFS_NAME = "polar_clock_settings";
 
-    public static final String PREF_SHOW_SECONDS = "show_seconds";
-    public static final String PREF_VARIABLE_LINE_WIDTH = "variable_line_width";
-    public static final String PREF_PALETTE = "palette";
+    static final String PREF_SHOW_SECONDS = "show_seconds";
+    static final String PREF_VARIABLE_LINE_WIDTH = "variable_line_width";
+    static final String PREF_PALETTE = "palette";
 
-    public static final int BACKGROUND_COLOR = 0xffffffff;
+    static final int BACKGROUND_COLOR = 0xffffffff;
 
     static abstract class ClockPalette {
         public static ClockPalette parseXmlPaletteTag(XmlResourceParser xrp) {
@@ -271,8 +274,7 @@ public class PolarClockWallpaper extends WallpaperService {
         return new ClockEngine();
     }
 
-    class ClockEngine extends Engine
-            implements SharedPreferences.OnSharedPreferenceChangeListener {
+    class ClockEngine extends Engine implements SharedPreferences.OnSharedPreferenceChangeListener {
         private static final float SMALL_RING_THICKNESS = 8.0f;
         private static final float MEDIUM_RING_THICKNESS = 16.0f;
         private static final float LARGE_RING_THICKNESS = 32.0f;
@@ -329,9 +331,9 @@ public class PolarClockWallpaper extends WallpaperService {
                     what = xrp.next();
                 }
             } catch (IOException e) {
-                // XXX: Log?
+                Log.e(LOG_TAG, "An error occured during wallpaper configuration:", e);
             } catch (XmlPullParserException e) {
-                // XXX: Log?
+                Log.e(LOG_TAG, "An error occured during wallpaper configuration:", e);
             } finally {
                 xrp.close();
             }
@@ -358,6 +360,10 @@ public class PolarClockWallpaper extends WallpaperService {
             paint.setStrokeWidth(DEFAULT_RING_THICKNESS);
             paint.setStrokeCap(Paint.Cap.ROUND);
             paint.setStyle(Paint.Style.STROKE);
+
+            if (isPreview()) {
+                mOffsetX = 0.5f;            
+            }
         }
 
         @Override
@@ -446,7 +452,7 @@ public class PolarClockWallpaper extends WallpaperService {
 
         void drawFrame() {
             if (mPalette == null) {
-                android.util.Log.w("PolarClockWallpaper", "no palette?!");
+                Log.w("PolarClockWallpaper", "no palette?!");
                 return;
             }
 

@@ -34,6 +34,8 @@
 float skyOffsetX;
 float skyOffsetY;
 
+int lastDrop;
+
 struct vert_s {
     float x;
     float y;
@@ -50,18 +52,21 @@ int offset(int x, int y, int width) {
 }
 
 void initLeaves() {
+    if (State->isPreview) lastDrop = uptimeMillis();
+
     struct Leaves_s *leaf = Leaves;
     int leavesCount = State->leavesCount;
+    float width = State->glWidth;
     float height = State->glHeight;
 
     int i;
     for (i = 0; i < leavesCount; i ++) {
         int sprite = randf(LEAVES_TEXTURES_COUNT);
-        leaf->x = randf2(-1.0f, 1.0f);
-        leaf->y = randf2(-height / 2.0f, height / 2.0f);
+        leaf->x = randf2(-width * 0.5f, width * 0.5f);
+        leaf->y = randf2(-height * 0.5f, height * 0.5f);
         leaf->scale = randf2(0.4f, 0.5f);
         leaf->angle = randf2(0.0f, 360.0f);
-        leaf->spin = degf(randf2(-0.02f, 0.02f)) / 4.0f;
+        leaf->spin = degf(randf2(-0.02f, 0.02f)) * 0.25f;
         leaf->u1 = sprite / (float) LEAVES_TEXTURES_COUNT;
         leaf->u2 = (sprite + 1) / (float) LEAVES_TEXTURES_COUNT;
         leaf->altitude = -1.0f;
@@ -332,10 +337,10 @@ void drawLeaf(struct Leaves_s *leaf, int meshWidth, int meshHeight, float glWidt
             LEAF_SIZE * s + y < -glHeight / 2.0f) {
 
         int sprite = randf(LEAVES_TEXTURES_COUNT);
-        leaf->x = randf2(-1.0f, 1.0f);
-        leaf->y = randf2(-glHeight / 2.0f, glHeight / 2.0f);
+        leaf->x = randf2(-glWidth * 0.5f, glWidth * 0.5f);
+        leaf->y = randf2(-glHeight * 0.5f, glHeight * 0.5f);
         leaf->scale = randf2(0.4f, 0.5f);
-        leaf->spin = degf(randf2(-0.02f, 0.02f)) / 4.0f;
+        leaf->spin = degf(randf2(-0.02f, 0.02f)) * 0.25f;
         leaf->u1 = sprite / (float) LEAVES_TEXTURES_COUNT;
         leaf->u2 = (sprite + 1) / (float) LEAVES_TEXTURES_COUNT;
         leaf->altitude = 0.6f;
@@ -453,6 +458,18 @@ int main(int index) {
         Drop->dropX = -1;
         Drop->dropY = -1;
     }
+    
+    if (State->isPreview) {
+        int now = uptimeMillis();
+        if (now - lastDrop > 2000) {
+            float x = randf(State->meshWidth);
+            float y = randf(State->meshHeight);
+
+            drop(x, y, DROP_RADIUS);
+
+            lastDrop = now;
+        }
+    }    
 
     updateRipples();
     generateRipples();

@@ -262,6 +262,7 @@ class FallRS extends RenderScriptScene {
         public float skySpeedX;
         public float skySpeedY;
         public int rotate;
+        public int isPreview;
     }
 
     static class DropState {
@@ -283,6 +284,7 @@ class FallRS extends RenderScriptScene {
         mWorldState.skySpeedX = random(-0.001f, 0.001f);
         mWorldState.skySpeedY = random(0.00008f, 0.0002f);
         mWorldState.rotate = mWidth > mHeight ? 1 : 0;
+        mWorldState.isPreview = isPreview() ? 1 : 0;
 
         mStateType = Type.createFromClass(mRS, WorldState.class, 1, "WorldState");
         mState = Allocation.createTyped(mRS, mStateType);
