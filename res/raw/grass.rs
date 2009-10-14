@@ -41,11 +41,6 @@
 
 #define MAX_BEND 0.09f
 
-#define MIDNIGHT 0.0f
-#define MORNING 0.3f
-#define AFTERNOON 0.75f
-#define DUSK 0.84f
-
 #define SECONDS_IN_DAY 86400.0f
 
 #define PI 3.1415926f
@@ -57,7 +52,7 @@ float time() {
     if (REAL_TIME) {
         return (hour() * 3600.0f + minute() * 60.0f + second()) / SECONDS_IN_DAY;
     }
-    float t = uptimeMillis() / 20000.0f;
+    float t = uptimeMillis() / 40000.0f;
     return t - (int) t;
 }
 
@@ -93,7 +88,9 @@ void drawSunset(int width, int height) {
     drawRect(0.0f, 0.0f, width, height, 0.0f);
 }
 
-int drawBlade(float *bladeStruct, float *bladeBuffer, int *bladeColor, float now, float xOffset) {
+int drawBlade(float *bladeStruct, float *bladeBuffer, int *bladeColor,
+        float brightness, float xOffset) {
+
     float offset = bladeStruct[BLADE_STRUCT_OFFSET];
     float scale = bladeStruct[BLADE_STRUCT_SCALE];
     float angle = bladeStruct[BLADE_STRUCT_ANGLE];
@@ -112,20 +109,7 @@ int drawBlade(float *bladeStruct, float *bladeBuffer, int *bladeColor, float now
     float s = bladeStruct[BLADE_STRUCT_S];
     float b = bladeStruct[BLADE_STRUCT_B];
 
-    float newB = 1.0f;
-    if (now >= MIDNIGHT && now < MORNING) {
-        newB = now / MORNING;
-    }
-
-    if (now >= AFTERNOON && now < DUSK) {
-        newB = 1.0f - normf(AFTERNOON, DUSK, now);
-    }
-
-    if (now >= DUSK) {
-        newB = 0.0f;
-    }
-
-    int color = hsbToAbgr(h, s, lerpf(0, b, newB), 1.0f);
+    int color = hsbToAbgr(h, s, lerpf(0, b, brightness), 1.0f);
 
     float newAngle = turbulencef2(turbulenceX, uptimeMillis() * 0.00004f, 4.0f) - 0.5f;
     newAngle *= 0.5f;
@@ -203,7 +187,7 @@ int drawBlade(float *bladeStruct, float *bladeBuffer, int *bladeColor, float now
     return triangles * 15;
 }
 
-void drawBlades(float now, float xOffset) {
+void drawBlades(float brightness, float xOffset) {
     // For anti-aliasing
     bindTexture(NAMED_PFBackground, 0, NAMED_TAa);
 
@@ -216,7 +200,7 @@ void drawBlades(float now, float xOffset) {
     int *bladeColor = loadArrayI32(RSID_BLADES_BUFFER, 0);
 
     for ( ; i < bladesCount; i += 1) {
-        int offset = drawBlade(bladeStruct, bladeBuffer, bladeColor, now, xOffset);
+        int offset = drawBlade(bladeStruct, bladeBuffer, bladeColor, brightness, xOffset);
         bladeBuffer += offset;
         bladeColor += offset;
         bladeStruct += BLADE_STRUCT_FIELDS_COUNT;
@@ -235,25 +219,49 @@ int main(int launchID) {
     float now = time();
     alpha(1.0f);
 
-    if (now >= MIDNIGHT && now < MORNING) {
+    float newB = 1.0f;
+    float dawn = State->dawn;
+    float morning = State->morning;
+    float afternoon = State->afternoon;
+    float dusk = State->dusk;
+
+    if (now >= 0.0f && now < dawn) {                    // Draw night
         drawNight(width, height);
-        alpha(normf(MIDNIGHT, MORNING, now));
-        drawSunrise(width, height);
-    } else if (now >= MORNING && now < AFTERNOON) {
-        drawSunrise(width, height);
-        alpha(normf(MORNING, AFTERNOON, now));
+        newB = 0.0f;
+    } else if (now >= dawn && now <= morning) {         // Draw sunrise
+        float half = dawn + (morning - dawn) * 0.5f;
+        if (now <= half) {                              // Draw night->sunrise
+            drawNight(width, height);
+            newB = normf(dawn, half, now);
+            alpha(newB);
+            drawSunrise(width, height);
+        } else {                                        // Draw sunrise->day
+            drawSunrise(width, height);
+            alpha(normf(half, morning, now));
+            drawNoon(width, height);    
+        }
+    } else if (now > morning && now < afternoon) {      // Draw day
         drawNoon(width, height);
-    } else if (now >= AFTERNOON && now < DUSK) {
-        drawNoon(width, height);
-        alpha(normf(AFTERNOON, DUSK, now));
-        drawSunset(width, height);
-    } else if (now >= DUSK) {
+    } else if (now >= afternoon && now <= dusk) {       // Draw sunset
+        float half = afternoon + (dusk - afternoon) * 0.5f;
+        if (now <= half) {                              // Draw day->sunset
+            drawNoon(width, height);
+            newB = normf(afternoon, half, now);
+            alpha(newB);
+            newB = 1.0f - newB;
+            drawSunset(width, height);
+        } else {                                        // Draw sunset->night
+            drawSunset(width, height);
+            alpha(normf(half, dusk, now));
+            drawNight(width, height);
+            newB = 0.0f;
+        }
+    } else if (now > dusk) {                            // Draw night
         drawNight(width, height);
-        alpha(1.0f - normf(DUSK, 1.0f, now));
-        drawSunset(width, height);
+        newB = 0.0f;
     }
 
-    drawBlades(now, x);
+    drawBlades(newB, x);
 
     return 1;
 }

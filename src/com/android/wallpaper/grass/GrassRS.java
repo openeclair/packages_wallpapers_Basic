@@ -34,18 +34,29 @@ import android.renderscript.Element;
 import android.renderscript.SimpleMesh;
 import android.renderscript.Primitive;
 import static android.renderscript.Sampler.Value.*;
+import android.content.Context;
+import android.content.IntentFilter;
+import android.content.Intent;
+import android.content.BroadcastReceiver;
+import android.location.LocationManager;
+import android.location.LocationListener;
+import android.location.Location;
+import android.os.Bundle;
+import android.text.format.Time;
 import com.android.wallpaper.R;
 import com.android.wallpaper.RenderScriptScene;
 
 import java.util.TimeZone;
+import java.util.Calendar;
 
 class GrassRS extends RenderScriptScene {
+    private static final int LOCATION_UPDATE_MIN_TIME = 60 * 60 * 1000; // 1 hour
+    private static final int LOCATION_UPDATE_MIN_DISTANCE = 150 * 1000; // 150 km
+
     private static final float TESSELATION = 0.5f;
-
-    private static final int RSID_STATE = 0;
-
     private static final int TEXTURES_COUNT = 5;
 
+    private static final int RSID_STATE = 0;
     private static final int RSID_BLADES = 1;
     private static final int BLADES_COUNT = 200;
     private static final int BLADE_STRUCT_FIELDS_COUNT = 13;
@@ -88,12 +99,60 @@ class GrassRS extends RenderScriptScene {
     private SimpleMesh mBladesMesh;
 
     private int mTriangles;
-    private final float[] mFloatData5 = new float[5];
-    private WorldState mWorldState;
     private float[] mBladesData;
+    private final float[] mFloatData5 = new float[5];
 
-    GrassRS(int width, int height) {
+    private WorldState mWorldState;
+
+    private final Context mContext;
+    private final LocationManager mLocationManager;
+
+    private LocationUpdater mLocationUpdater;
+    private GrassRS.TimezoneTracker mTimezoneTracker;
+
+    GrassRS(Context context, int width, int height) {
         super(width, height);
+
+        mContext = context;
+        mLocationManager = (LocationManager)
+                context.getSystemService(Context.LOCATION_SERVICE);
+    }
+
+    @Override
+    public void start() {
+        super.start();
+
+        if (mTimezoneTracker == null) {
+            mTimezoneTracker = new TimezoneTracker();
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(Intent.ACTION_TIME_CHANGED);
+            filter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
+    
+            mContext.registerReceiver(mTimezoneTracker, filter);
+        }
+
+        if (mLocationUpdater == null) {
+            mLocationUpdater = new LocationUpdater();
+            mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
+                    LOCATION_UPDATE_MIN_TIME, LOCATION_UPDATE_MIN_DISTANCE, mLocationUpdater);
+        }
+
+        updateLocation();
+    }
+
+    @Override
+    public void stop() {
+        super.stop();
+
+        if (mTimezoneTracker != null) {
+            mContext.unregisterReceiver(mTimezoneTracker);
+            mTimezoneTracker = null;
+        }
+        
+        if (mLocationUpdater != null) {
+            mLocationManager.removeUpdates(mLocationUpdater);
+            mLocationUpdater = null;
+        }
     }
 
     @Override
@@ -154,6 +213,10 @@ class GrassRS extends RenderScriptScene {
         public int width;
         public int height;
         public float xOffset;
+        public float dawn;
+        public float morning;
+        public float afternoon;
+        public float dusk;
     }
 
     private void createState() {
@@ -341,5 +404,54 @@ class GrassRS extends RenderScriptScene {
         mPvBackground = pvb.create();
         mPvBackground.bindAllocation(mPvOrthoAlloc);
         mPvBackground.setName("PVBackground");
+    }
+
+    private void updateLocation() {
+        updateLocation(mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER));
+    }
+
+    private void updateLocation(Location location) {
+        if (location != null) {
+            final String timeZone = Time.getCurrentTimezone();
+            final SunCalculator calculator = new SunCalculator(location, timeZone);
+            final Calendar now = Calendar.getInstance();
+
+            final double sunrise = calculator.computeSunriseTime(SunCalculator.ZENITH_CIVIL, now);
+            mWorldState.dawn = SunCalculator.timeToDayFraction(sunrise);
+
+            final double sunset = calculator.computeSunsetTime(SunCalculator.ZENITH_CIVIL, now);
+            mWorldState.dusk = SunCalculator.timeToDayFraction(sunset);
+        } else {
+            mWorldState.dawn = 0.3f;
+            mWorldState.dusk = 0.75f;
+        }
+
+        mWorldState.morning = mWorldState.dawn + 1.0f / 12.0f; // 2 hours for sunrise
+        mWorldState.afternoon = mWorldState.dusk - 1.0f / 12.0f; // 2 hours for sunset
+
+        // Send the new data to RenderScript
+        mState.data(mWorldState);
+    }
+
+    private class LocationUpdater implements LocationListener {
+        public void onLocationChanged(Location location) {
+            updateLocation(location);
+        }
+
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+        }
+
+        public void onProviderEnabled(String provider) {
+        }
+
+        public void onProviderDisabled(String provider) {
+        }
+    }
+
+    private class TimezoneTracker extends BroadcastReceiver {
+        public void onReceive(Context context, Intent intent) {
+            getScript().setTimeZone(Time.getCurrentTimezone());
+            updateLocation();
+        }
     }
 }
