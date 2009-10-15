@@ -151,7 +151,7 @@ void drawParticles(float xOffset, float offset, int width, int height) {
     if (State->scale == 0) {
         matrixScale(matrix, 6.6f, 6.0f, 1.0f);
     } else {
-        matrixScale(matrix, 7.6f, 16.0f, 1.0f);
+        matrixScale(matrix, 12.6f, 12.0f, 1.0f);
     }
     matrixRotate(matrix, absoluteAngle, 1.0f, 0.0f, 0.0f);
     matrixRotate(matrix, a, 0.0f, 0.4f, 0.1f);
