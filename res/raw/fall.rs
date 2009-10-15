@@ -247,7 +247,9 @@ void generateRipples() {
     }
 }
 
-void drawLeaf(struct Leaves_s *leaf, int meshWidth, int meshHeight, float glWidth, float glHeight) {
+void drawLeaf(struct Leaves_s *leaf, int meshWidth, int meshHeight, float glWidth, float glHeight,
+        int rotate) {
+
     float x = leaf->x;
     float x1 = x - LEAF_SIZE;
     float x2 = x + LEAF_SIZE;
@@ -282,8 +284,12 @@ void drawLeaf(struct Leaves_s *leaf, int meshWidth, int meshHeight, float glWidt
 
     if (a > 0.0f) {
         color(0.0f, 0.0f, 0.0f, 0.15f);
-    
-        matrixLoadIdentity(matrix);
+
+        if (rotate) {
+            matrixLoadRotate(matrix, 90.0f, 0.0f, 0.0f, 1.0f);
+        } else {
+            matrixLoadIdentity(matrix);
+        }
         matrixTranslate(matrix, x, y, 0.0f);
         matrixScale(matrix, s, s, 1.0f);
         matrixRotate(matrix, r, 0.0f, 0.0f, 1.0f);
@@ -301,7 +307,11 @@ void drawLeaf(struct Leaves_s *leaf, int meshWidth, int meshHeight, float glWidt
         color(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
-    matrixLoadIdentity(matrix);
+    if (rotate) {
+        matrixLoadRotate(matrix, 90.0f, 0.0f, 0.0f, 1.0f);
+    } else {
+        matrixLoadIdentity(matrix);
+    }
     matrixTranslate(matrix, x, y, tz);
     matrixScale(matrix, s, s, 1.0f);
     matrixRotate(matrix, r, 0.0f, 0.0f, 1.0f);
@@ -363,12 +373,13 @@ void drawLeaves() {
     int height = State->meshHeight;
     float glWidth = State->glWidth;
     float glHeight = State->glHeight;
+    int rotate = State->rotate;
 
     struct Leaves_s *leaf = Leaves;
 
     int i = 0;
     for ( ; i < leavesCount; i += 1) {
-        drawLeaf(leaf, width, height, glWidth, glHeight);
+        drawLeaf(leaf, width, height, glWidth, glHeight, rotate);
         leaf += 1;
     }
 
@@ -474,6 +485,12 @@ int main(int index) {
     updateRipples();
     generateRipples();
     updateSimpleMesh(NAMED_WaterMesh);
+
+    if (State->rotate) {
+        float matrix[16];
+        matrixLoadRotate(matrix, 90.0f, 0.0f, 0.0f, 1.0f);
+        vpLoadModelMatrix(matrix);
+    }
 
     drawRiverbed();
     drawSky();

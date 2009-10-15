@@ -114,7 +114,7 @@ class FallRS extends RenderScriptScene {
 
         mWorldState.width = width;
         mWorldState.height = height;
-        mWorldState.rotate = 1;
+        mWorldState.rotate = width > height ? 1 : 0;
         mState.data(mWorldState);
 
         mPvOrthoAlloc.setupOrthoWindow(width, height);
@@ -399,8 +399,13 @@ class FallRS extends RenderScriptScene {
     }
 
     void addDrop(float x, float y) {
-        mDrop.dropX = (int) ((x / mWidth) * mMeshWidth);
-        mDrop.dropY = (int) ((y / mHeight) * mMeshHeight);
+        if (mWorldState.rotate == 0) {
+            mDrop.dropX = (int) ((x / mWidth) * mMeshWidth);
+            mDrop.dropY = (int) ((y / mHeight) * mMeshHeight);
+        } else {
+            mDrop.dropY = (int) ((x / mWidth) * mMeshHeight);
+            mDrop.dropX = mMeshWidth - (int) ((y / mHeight) * mMeshWidth);
+        }
         mDropState.data(mDrop);
     }
 }
