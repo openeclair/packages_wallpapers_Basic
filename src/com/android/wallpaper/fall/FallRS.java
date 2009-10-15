@@ -154,21 +154,13 @@ class FallRS extends RenderScriptScene {
 
     private void createMesh() {
         SimpleMesh.TriangleMeshBuilder tmb = new SimpleMesh.TriangleMeshBuilder(mRS, 3,
-            SimpleMesh.TriangleMeshBuilder.NORMAL | SimpleMesh.TriangleMeshBuilder.TEXTURE_0);
+                SimpleMesh.TriangleMeshBuilder.NORMAL | SimpleMesh.TriangleMeshBuilder.TEXTURE_0);
 
-        int wResolution;
-        int hResolution;
+        final int width = mWidth > mHeight ? mHeight : mWidth;
+        final int height = mWidth > mHeight ? mWidth : mHeight;
 
-        final int width = mWidth;
-        final int height = mHeight;
-
-        if (width < height) {
-            wResolution = MESH_RESOLUTION;
-            hResolution = (int) (MESH_RESOLUTION * height / (float) width);
-        } else {
-            wResolution = (int) (MESH_RESOLUTION * width / (float) height);
-            hResolution = MESH_RESOLUTION;
-        }
+        int wResolution = MESH_RESOLUTION;
+        int hResolution = (int) (MESH_RESOLUTION * height / (float) width);
 
         mGlHeight = 2.0f * height / (float) width;
         final float glHeight = mGlHeight;

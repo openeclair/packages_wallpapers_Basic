@@ -469,7 +469,7 @@ int main(int index) {
 
             lastDrop = now;
         }
-    }    
+    }
 
     updateRipples();
     generateRipples();
