@@ -98,7 +98,7 @@ class FallRS extends RenderScriptScene {
 
     private Allocation mLeaves;
     private Type mLeavesType;
-    
+
     private float mGlHeight;
 
     public FallRS(int width, int height) {
@@ -117,7 +117,7 @@ class FallRS extends RenderScriptScene {
         mWorldState.rotate = width > height ? 1 : 0;
         mState.data(mWorldState);
 
-        mPvOrthoAlloc.setupOrthoWindow(width, height);
+        mPvOrthoAlloc.setupProjectionNormalized(mWidth, mHeight);
     }
 
     @Override
@@ -220,7 +220,7 @@ class FallRS extends RenderScriptScene {
 
     private void createLeaves() {
         mLeavesType = Type.createFromClass(mRS, Leaf.class, LEAVES_COUNT, "Leaf");
-        mLeaves = Allocation.createTyped(mRS, mLeavesType);        
+        mLeaves = Allocation.createTyped(mRS, mLeavesType);
     }
 
     private void createRefractionMap() {
@@ -303,7 +303,7 @@ class FallRS extends RenderScriptScene {
         public float rippled;
         public float deltaX;
         public float deltaY;
-    }    
+    }
 
     private void loadTextures() {
         final Allocation[] textures = new Allocation[TEXTURES_COUNT];
