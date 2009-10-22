@@ -59,7 +59,7 @@ void init() {
 void initLeaves() {
     struct Leaves_s *leaf = Leaves;
     int leavesCount = State->leavesCount;
-    float width = State->glWidth;
+    float width = State->glWidth * 2;
     float height = State->glHeight;
 
     int i;
@@ -95,6 +95,8 @@ void generateRipples() {
     int width = State->meshWidth;
     int height = State->meshHeight;
     int index = State->rippleIndex;
+    float ratio = (float)State->meshWidth / State->glWidth;
+    float xShift = State->xOffset * ratio * 2;
 
     float *vertices = loadSimpleMeshVerticesF(NAMED_WaterMesh, 0);
     struct vert_s *vert = (struct vert_s *)vertices;
@@ -110,7 +112,7 @@ void generateRipples() {
                 float z = 0;
 
                 for (ct = 0; ct < gMaxDrops; ct++) {
-                    float dx = d->x - x;
+                    float dx = (d->x - xShift) - x;
                     float dy = d->y - y;
                     float dist = sqrtf(dx*dx + dy*dy);
                     if (dist < d->spread && d->amp) {
@@ -171,20 +173,10 @@ void drawLeaf(struct Leaves_s *leaf, int meshWidth, int meshHeight, float glWidt
         int rotate) {
 
     float x = leaf->x;
-    float x1 = x - LEAF_SIZE;
-    float x2 = x + LEAF_SIZE;
-
     float y = leaf->y;
-    float y1 = y - LEAF_SIZE;
-    float y2 = y + LEAF_SIZE;
 
     float u1 = leaf->u1;
     float u2 = leaf->u2;
-
-    float z1 = 0.0f;
-    float z2 = 0.0f;
-    float z3 = 0.0f;
-    float z4 = 0.0f;
 
     float a = leaf->altitude;
     float s = leaf->scale;
@@ -195,13 +187,7 @@ void drawLeaf(struct Leaves_s *leaf, int meshWidth, int meshHeight, float glWidt
         tz = -a;
     }
 
-    x1 -= x;
-    x2 -= x;
-    y1 -= y;
-    y2 -= y;
-
     float matrix[16];
-
     if (a > 0.0f) {
         color(0.0f, 0.0f, 0.0f, 0.15f);
 
@@ -210,15 +196,15 @@ void drawLeaf(struct Leaves_s *leaf, int meshWidth, int meshHeight, float glWidt
         } else {
             matrixLoadIdentity(matrix);
         }
-        matrixTranslate(matrix, x, y, 0.0f);
+        matrixTranslate(matrix, x - State->xOffset * 2, y, 0.0f);
         matrixScale(matrix, s, s, 1.0f);
         matrixRotate(matrix, r, 0.0f, 0.0f, 1.0f);
         vpLoadModelMatrix(matrix);
 
-        drawQuadTexCoords(x1, y1, z1, u1, 1.0f,
-                          x2, y1, z2, u2, 1.0f,
-                          x2, y2, z3, u2, 0.0f,
-                          x1, y2, z4, u1, 0.0f);
+        drawQuadTexCoords(-LEAF_SIZE, -LEAF_SIZE, 0, u1, 1.0f,
+                           LEAF_SIZE, -LEAF_SIZE, 0, u2, 1.0f,
+                           LEAF_SIZE,  LEAF_SIZE, 0, u2, 0.0f,
+                          -LEAF_SIZE,  LEAF_SIZE, 0, u1, 0.0f);
 
         float alpha = 1.0f;
         if (a >= 0.4f) alpha = 1.0f - (a - 0.5f) / 0.1f;
@@ -232,15 +218,15 @@ void drawLeaf(struct Leaves_s *leaf, int meshWidth, int meshHeight, float glWidt
     } else {
         matrixLoadIdentity(matrix);
     }
-    matrixTranslate(matrix, x, y, tz);
+    matrixTranslate(matrix, x - State->xOffset * 2, y, tz);
     matrixScale(matrix, s, s, 1.0f);
     matrixRotate(matrix, r, 0.0f, 0.0f, 1.0f);
     vpLoadModelMatrix(matrix);
 
-    drawQuadTexCoords(x1, y1, z1, u1, 1.0f,
-                      x2, y1, z2, u2, 1.0f,
-                      x2, y2, z3, u2, 0.0f,
-                      x1, y2, z4, u1, 0.0f);
+    drawQuadTexCoords(-LEAF_SIZE, -LEAF_SIZE, 0, u1, 1.0f,
+                       LEAF_SIZE, -LEAF_SIZE, 0, u2, 1.0f,
+                       LEAF_SIZE,  LEAF_SIZE, 0, u2, 0.0f,
+                      -LEAF_SIZE,  LEAF_SIZE, 0, u1, 0.0f);
 
     float spin = leaf->spin;
     if (a <= 0.0f) {
@@ -263,11 +249,11 @@ void drawLeaf(struct Leaves_s *leaf, int meshWidth, int meshHeight, float glWidt
         leaf->angle = r;
     }
 
-    if (-LEAF_SIZE * s + x > glWidth / 2.0f || LEAF_SIZE * s + x < -glWidth / 2.0f ||
+    if (-LEAF_SIZE * s + x > glWidth || LEAF_SIZE * s + x < -glWidth ||
             LEAF_SIZE * s + y < -glHeight / 2.0f) {
 
         int sprite = randf(LEAVES_TEXTURES_COUNT);
-        leaf->x = randf2(-glWidth * 0.5f, glWidth * 0.5f);
+        leaf->x = randf2(-glWidth, glWidth);
         leaf->y = randf2(-glHeight * 0.5f, glHeight * 0.5f);
         leaf->scale = randf2(0.4f, 0.5f);
         leaf->spin = degf(randf2(-0.02f, 0.02f)) * 0.25f;
@@ -311,6 +297,9 @@ void drawLeaves() {
 void drawRiverbed() {
     bindTexture(NAMED_PFBackground, 0, NAMED_TRiverbed);
 
+    float matrix[16];
+    matrixLoadTranslate(matrix, + State->xOffset, 0.f, 0.0f);
+    vpLoadTextureMatrix(matrix);
     drawSimpleMesh(NAMED_WaterMesh);
 }
 
@@ -332,7 +321,7 @@ void drawSky() {
     skyOffsetY = y;
 
     float matrix[16];
-    matrixLoadTranslate(matrix, x, y, 0.0f);
+    matrixLoadTranslate(matrix, x + State->xOffset, y, 0.0f);
     vpLoadTextureMatrix(matrix);
 
     drawSimpleMesh(NAMED_WaterMesh);

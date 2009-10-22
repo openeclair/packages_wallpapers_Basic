@@ -107,6 +107,12 @@ class FallRS extends RenderScriptScene {
     }
 
     @Override
+    public void setOffset(float xOffset, float yOffset, int xPixels, int yPixels) {
+        mWorldState.xOffset = xOffset;
+        mState.data(mWorldState);
+    }
+
+    @Override
     public void resize(int width, int height) {
         super.resize(width, height);
 
@@ -240,6 +246,7 @@ class FallRS extends RenderScriptScene {
         public float skySpeedY;
         public int rotate;
         public int isPreview;
+        public float xOffset;
     }
 
     static class DropState {
