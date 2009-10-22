@@ -37,7 +37,9 @@ struct vert_s {
 struct drop_s {
     float amp;
     float spread;
+    float spread2;
     float invSpread;
+    float invSpread2;
     float x;
     float y;
 };
@@ -51,7 +53,9 @@ void init() {
     for (ct=0; ct<gMaxDrops; ct++) {
         gDrops[ct].amp = 0;
         gDrops[ct].spread = 1;
+        gDrops[ct].spread2 = gDrops[ct].spread * gDrops[ct].spread;
         gDrops[ct].invSpread = 1 / gDrops[ct].spread;
+        gDrops[ct].invSpread2 = gDrops[ct].invSpread * gDrops[ct].invSpread;
     }
     gNextDrop = 0;
 }
@@ -112,13 +116,15 @@ void generateRipples() {
                 float z = 0;
 
                 for (ct = 0; ct < gMaxDrops; ct++) {
-                    float dx = (d->x - xShift) - x;
-                    float dy = d->y - y;
-                    float dist = sqrtf(dx*dx + dy*dy);
-                    if (dist < d->spread && d->amp) {
-                        float a = d->amp * d->invSpread;
-                        a *= dist * d->invSpread;
-                        z += sinf(d->spread - dist) * a;
+                    if (d->amp > 0.01f) {
+                        float dx = (d->x - xShift) - x;
+                        float dy = d->y - y;
+                        float dist2 = dx*dx + dy*dy;
+                        if (dist2 < d->spread2) {
+                            float dist = sqrtf(dist2);
+                            float a = d->amp * dist * d->invSpread2;
+                            z += sinf(d->spread - dist) * a;
+                        }
                     }
                     d++;
                 }
@@ -130,7 +136,9 @@ void generateRipples() {
         }
         for (ct = 0; ct < gMaxDrops; ct++) {
             gDrops[ct].spread += 1;
+            gDrops[ct].spread2 = gDrops[ct].spread * gDrops[ct].spread;
             gDrops[ct].invSpread = 1 / gDrops[ct].spread;
+            gDrops[ct].invSpread2 = gDrops[ct].invSpread * gDrops[ct].invSpread;
             gDrops[ct].amp = maxf(gDrops[ct].amp - 0.01f, 0);
         }
     }
