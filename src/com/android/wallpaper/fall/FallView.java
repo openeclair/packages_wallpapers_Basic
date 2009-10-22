@@ -45,7 +45,7 @@ class FallView extends RSSurfaceView {
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
-            case MotionEvent.ACTION_MOVE:
+            //case MotionEvent.ACTION_MOVE:
                 mRender.addDrop(event.getX(), event.getY());
                 try {
                     Thread.sleep(16);

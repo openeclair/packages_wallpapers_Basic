@@ -53,7 +53,6 @@ class FallRS extends RenderScriptScene {
     private static final int RSID_TEXTURE_SKY = 2;
 
     private static final int RSID_RIPPLE_MAP = 1;
-    private static final int RSID_REFRACTION_MAP = 2;
     private static final int RSID_LEAVES = 3;
     private static final int RSID_DROP = 4;
 
@@ -94,7 +93,6 @@ class FallRS extends RenderScriptScene {
     private WorldState mWorldState;
 
     private Allocation mRippleMap;
-    private Allocation mRefractionMap;
 
     private Allocation mLeaves;
     private Type mLeavesType;
@@ -143,7 +141,6 @@ class FallRS extends RenderScriptScene {
 
         script.bindAllocation(mState, RSID_STATE);
         script.bindAllocation(mRippleMap, RSID_RIPPLE_MAP);
-        script.bindAllocation(mRefractionMap, RSID_REFRACTION_MAP);
         script.bindAllocation(mLeaves, RSID_LEAVES);
         script.bindAllocation(mDropState, RSID_DROP);
 
@@ -214,24 +211,12 @@ class FallRS extends RenderScriptScene {
 
         createState(rippleMapSize);
         createRippleMap(rippleMapSize);
-        createRefractionMap();
         createLeaves();
     }
 
     private void createLeaves() {
         mLeavesType = Type.createFromClass(mRS, Leaf.class, LEAVES_COUNT, "Leaf");
         mLeaves = Allocation.createTyped(mRS, mLeavesType);
-    }
-
-    private void createRefractionMap() {
-        final int[] refractionMap = new int[513];
-        float ir = 1.0f / 1.333f;
-        for (int i = 0; i < refractionMap.length; i++) {
-            float d = (float) Math.tan(Math.asin(Math.sin(Math.atan(i * (1.0f / 256.0f))) * ir));
-            refractionMap[i] = (int) Math.floor(d * (1 << 16) + 0.5f);
-        }
-        mRefractionMap = Allocation.createSized(mRS, USER_I32(mRS), refractionMap.length);
-        mRefractionMap.data(refractionMap);
     }
 
     private void createRippleMap(int rippleMapSize) {
