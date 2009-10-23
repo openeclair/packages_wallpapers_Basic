@@ -18,6 +18,7 @@
 package com.android.wallpaper;
 
 import android.content.res.Resources;
+import android.os.Bundle;
 import android.renderscript.RenderScript;
 import android.renderscript.ScriptC;
 
@@ -82,5 +83,11 @@ public abstract class RenderScriptScene {
 
     @SuppressWarnings({"UnusedDeclaration"})
     public void setOffset(float xOffset, float yOffset, int xPixels, int yPixels) {
+    }
+    
+    @SuppressWarnings({"UnusedDeclaration"})
+    public Bundle onCommand(String action, int x, int y, int z, Bundle extras,
+            boolean resultRequested) {
+        return null;
     }
 }

@@ -17,6 +17,7 @@
 package com.android.wallpaper;
 
 import android.service.wallpaper.WallpaperService;
+import android.os.Bundle;
 import android.renderscript.RenderScript;
 import android.view.SurfaceHolder;
 import android.view.Surface;
@@ -101,5 +102,12 @@ public abstract class RenderScriptWallpaper<T extends RenderScriptScene> extends
             super.onSurfaceDestroyed(holder);
             destroyRenderer();
         }
+
+        @Override
+        public Bundle onCommand(String action, int x, int y, int z,
+                Bundle extras, boolean resultRequested) {
+            return mRenderer.onCommand(action, x, y, z, extras, resultRequested);
+        }
+        
     }
 }

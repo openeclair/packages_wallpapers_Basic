@@ -16,6 +16,7 @@
 
 package com.android.wallpaper.fall;
 
+import android.os.Bundle;
 import android.renderscript.ScriptC;
 import android.renderscript.ProgramFragment;
 import android.renderscript.ProgramStore;
@@ -110,6 +111,15 @@ class FallRS extends RenderScriptScene {
     public void setOffset(float xOffset, float yOffset, int xPixels, int yPixels) {
         mWorldState.xOffset = xOffset;
         mState.data(mWorldState);
+    }
+    
+    @Override
+    public Bundle onCommand(String action, int x, int y, int z, Bundle extras,
+            boolean resultRequested) {
+        if ("android.wallpaper.tap".equals(action)) {
+            addDrop(x + (mWorldState.width * mWorldState.xOffset), y);
+        }
+        return null;
     }
 
     @Override
