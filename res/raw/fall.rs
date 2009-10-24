@@ -44,7 +44,6 @@ struct drop_s {
     float y;
 };
 struct drop_s gDrops[10];
-int gNextDrop;
 int gMaxDrops;
 
 void init() {
@@ -57,7 +56,6 @@ void init() {
         gDrops[ct].invSpread = 1 / gDrops[ct].spread;
         gDrops[ct].invSpread2 = gDrops[ct].invSpread * gDrops[ct].invSpread;
     }
-    gNextDrop = 0;
 }
 
 void initLeaves() {
@@ -85,13 +83,19 @@ void initLeaves() {
 }
 
 void drop(int x, int y, float s) {
-    gDrops[gNextDrop].amp = s;
-    gDrops[gNextDrop].spread = 0.5f;
-    gDrops[gNextDrop].x = x;
-    gDrops[gNextDrop].y = State->meshHeight - y - 1;
-    gNextDrop++;
-    if (gNextDrop >= gMaxDrops)
-        gNextDrop = 0;
+    int ct;
+    int iMin = 0;
+    float minAmp = 10000.f;
+    for (ct = 0; ct < gMaxDrops; ct++) {
+        if (gDrops[ct].amp < minAmp) {
+            iMin = ct;
+            minAmp = gDrops[ct].amp;
+        }
+    }
+    gDrops[iMin].amp = s;
+    gDrops[iMin].spread = 0.5f;
+    gDrops[iMin].x = x;
+    gDrops[iMin].y = State->meshHeight - y - 1;
 }
 
 void generateRipples() {
@@ -177,8 +181,14 @@ void generateRipples() {
     }
 }
 
-void drawLeaf(struct Leaves_s *leaf, int meshWidth, int meshHeight, float glWidth, float glHeight,
-        int rotate) {
+void genLeafDrop(struct Leaves_s *leaf, float amp) {
+    float nx = (leaf->x + State->glWidth * 0.5f) / State->glWidth;
+    float ny = (leaf->y + State->glHeight * 0.5f) / State->glHeight;
+    drop(nx * State->meshWidth, State->meshHeight - ny * State->meshHeight, amp);
+
+}
+
+void drawLeaf(struct Leaves_s *leaf) {
 
     float x = leaf->x;
     float y = leaf->y;
@@ -199,7 +209,7 @@ void drawLeaf(struct Leaves_s *leaf, int meshWidth, int meshHeight, float glWidt
     if (a > 0.0f) {
         color(0.0f, 0.0f, 0.0f, 0.15f);
 
-        if (rotate) {
+        if (State->rotate) {
             matrixLoadRotate(matrix, 90.0f, 0.0f, 0.0f, 1.0f);
         } else {
             matrixLoadIdentity(matrix);
@@ -221,7 +231,7 @@ void drawLeaf(struct Leaves_s *leaf, int meshWidth, int meshHeight, float glWidt
         color(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
-    if (rotate) {
+    if (State->rotate) {
         matrixLoadRotate(matrix, 90.0f, 0.0f, 0.0f, 1.0f);
     } else {
         matrixLoadIdentity(matrix);
@@ -240,8 +250,9 @@ void drawLeaf(struct Leaves_s *leaf, int meshWidth, int meshHeight, float glWidt
     if (a <= 0.0f) {
         float rippled = leaf->rippled;
         if (rippled < 0.0f) {
-            drop(((x + glWidth * 0.5f) / glWidth) * meshWidth,
-                 meshHeight - ((y + glHeight * 0.5f) / glHeight) * meshHeight, 1);
+            genLeafDrop(leaf, 1.5f);
+            //drop(((x + State->glWidth * 0.5f) / State->glWidth) * meshWidth,
+            //     meshHeight - ((y + State->glHeight * 0.5f) / State->glHeight) * meshHeight, 1);
             spin /= 4.0f;
             leaf->spin = spin;
             leaf->rippled = 1.0f;
@@ -257,12 +268,12 @@ void drawLeaf(struct Leaves_s *leaf, int meshWidth, int meshHeight, float glWidt
         leaf->angle = r;
     }
 
-    if (-LEAF_SIZE * s + x > glWidth || LEAF_SIZE * s + x < -glWidth ||
-            LEAF_SIZE * s + y < -glHeight / 2.0f) {
+    if (-LEAF_SIZE * s + x > State->glWidth || LEAF_SIZE * s + x < -State->glWidth ||
+            LEAF_SIZE * s + y < -State->glHeight / 2.0f) {
 
         int sprite = randf(LEAVES_TEXTURES_COUNT);
-        leaf->x = randf2(-glWidth, glWidth);
-        leaf->y = randf2(-glHeight * 0.5f, glHeight * 0.5f);
+        leaf->x = randf2(-State->glWidth, State->glWidth);
+        leaf->y = randf2(-State->glHeight * 0.5f, State->glHeight * 0.5f);
         leaf->scale = randf2(0.4f, 0.5f);
         leaf->spin = degf(randf2(-0.02f, 0.02f)) * 0.25f;
         leaf->u1 = sprite / (float) LEAVES_TEXTURES_COUNT;
@@ -283,17 +294,10 @@ void drawLeaves() {
     color(1.0f, 1.0f, 1.0f, 1.0f);
 
     int leavesCount = State->leavesCount;
-    int width = State->meshWidth;
-    int height = State->meshHeight;
-    float glWidth = State->glWidth;
-    float glHeight = State->glHeight;
-    int rotate = State->rotate;
-
     struct Leaves_s *leaf = Leaves;
-
     int i = 0;
     for ( ; i < leavesCount; i += 1) {
-        drawLeaf(leaf, width, height, glWidth, glHeight, rotate);
+        drawLeaf(leaf);
         leaf += 1;
     }
 
@@ -388,20 +392,16 @@ int main(int index) {
     }
 
     int ct;
-    float amp = 0;
+    int add = 0;
     for (ct = 0; ct < gMaxDrops; ct++) {
-        amp += gDrops[ct].amp;
+        if (gDrops[ct].amp < 0.01f) {
+            add = 1;
+        }
     }
 
-    if (State->isPreview || (amp < 0.2f)) {
-        float x = randf(State->meshWidth);
-        float y = randf(State->meshHeight);
-
-        if (State->isPreview) {
-            drop(x, y, 1.f);
-        } else {
-            drop(x, y, 0.2f);
-        }
+    if (add) {
+        int i = (int)randf(State->leavesCount);
+        genLeafDrop(&Leaves[i], randf(0.3f) + 0.1f);
     }
 
     generateRipples();
