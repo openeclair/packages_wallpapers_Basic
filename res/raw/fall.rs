@@ -310,9 +310,14 @@ void drawRiverbed() {
     bindTexture(NAMED_PFBackground, 0, NAMED_TRiverbed);
 
     float matrix[16];
-    matrixLoadTranslate(matrix, + State->xOffset, 0.f, 0.0f);
+    matrixLoadScale(matrix, 0.5f, -1.0f, 1.0f);
+    matrixTranslate(matrix, State->xOffset, 0.0f, 0.0f);
     vpLoadTextureMatrix(matrix);
+
     drawSimpleMesh(NAMED_WaterMesh);
+
+    matrixLoadIdentity(matrix);
+    vpLoadTextureMatrix(matrix);
 }
 
 void drawSky() {
