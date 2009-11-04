@@ -118,6 +118,8 @@ class FallRS extends RenderScriptScene {
             boolean resultRequested) {
         if ("android.wallpaper.tap".equals(action)) {
             addDrop(x + (mWorldState.width * mWorldState.xOffset), y);
+        } else if ("android.home.drop".equals(action)) {
+            addDrop(x + (mWorldState.width * mWorldState.xOffset), y);
         }
         return null;
     }
