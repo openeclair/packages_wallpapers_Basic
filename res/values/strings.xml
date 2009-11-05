@@ -25,7 +25,14 @@
 
     <!-- Wallpapers: -->
     <skip />    
-    
+
+    <!-- Wallpaper showing the camera preview -->
+    <string name="wallpaper_walkaround">See Through</string>
+    <string name="wallpaper_walkaround_author">Google</string>
+    <string name="wallpaper_walkaround_desc">
+        See through your phone and walk around without risking accidents.
+    </string>
+
     <!-- Wallpaper showing grass and the sky -->
     <string name="wallpaper_grass">Grass</string>
     <string name="wallpaper_grass_author">Google</string>
@@ -41,7 +48,7 @@
     </string>
 
     <!-- Wallpaper showing leaves floating on water -->
-    <string name="wallpaper_fall">Water</string>    
+    <string name="wallpaper_fall">Water</string>
     <string name="wallpaper_fall_author">Google</string>
     <string name="wallpaper_fall_desc">
         Autumn leaves tumble&lt;br&gt;

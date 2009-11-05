@@ -22,6 +22,7 @@
     package="com.android.wallpaper">
 
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <application
         android:label="@string/wallpapers"
@@ -118,6 +119,16 @@
                 <action android:name="android.service.wallpaper.WallpaperService" />
             </intent-filter>
             <meta-data android:name="android.service.wallpaper" android:resource="@xml/polar_clock" />
+        </service>
+
+        <service
+            android:label="@string/wallpaper_walkaround"
+            android:name="com.android.wallpaper.walkaround.WalkAroundWallpaper"
+            android:permission="android.permission.BIND_WALLPAPER">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data android:name="android.service.wallpaper" android:resource="@xml/walkaround" />
         </service>
 
     </application>
