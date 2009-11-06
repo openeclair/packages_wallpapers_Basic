@@ -29,13 +29,11 @@ struct vert_s {
     float z;
     float s;
     float t;
-    float nx;
-    float ny;
-    float nz;
 };
 
 struct drop_s {
-    float amp;
+    float ampS;
+    float ampE;
     float spread;
     float spread2;
     float invSpread;
@@ -50,7 +48,8 @@ void init() {
     int ct;
     gMaxDrops = 10;
     for (ct=0; ct<gMaxDrops; ct++) {
-        gDrops[ct].amp = 0;
+        gDrops[ct].ampS = 0;
+        gDrops[ct].ampE = 0;
         gDrops[ct].spread = 1;
         gDrops[ct].spread2 = gDrops[ct].spread * gDrops[ct].spread;
         gDrops[ct].invSpread = 1 / gDrops[ct].spread;
@@ -82,20 +81,29 @@ void initLeaves() {
     }
 }
 
+void updateDrop(int ct) {
+    gDrops[ct].spread += 1;
+    gDrops[ct].spread2 = gDrops[ct].spread * gDrops[ct].spread;
+    gDrops[ct].invSpread = 1 / gDrops[ct].spread;
+    gDrops[ct].invSpread2 = gDrops[ct].invSpread * gDrops[ct].invSpread;
+    gDrops[ct].ampE = gDrops[ct].ampS * gDrops[ct].invSpread;
+}
+
 void drop(int x, int y, float s) {
     int ct;
     int iMin = 0;
     float minAmp = 10000.f;
     for (ct = 0; ct < gMaxDrops; ct++) {
-        if (gDrops[ct].amp < minAmp) {
+        if (gDrops[ct].ampE < minAmp) {
             iMin = ct;
-            minAmp = gDrops[ct].amp;
+            minAmp = gDrops[ct].ampE;
         }
     }
-    gDrops[iMin].amp = s;
-    gDrops[iMin].spread = 0.5f;
+    gDrops[iMin].ampS = s;
+    gDrops[iMin].spread = 0;
     gDrops[iMin].x = x;
     gDrops[iMin].y = State->meshHeight - y - 1;
+    updateDrop(iMin);
 }
 
 void generateRipples() {
@@ -120,34 +128,27 @@ void generateRipples() {
                 float z = 0;
 
                 for (ct = 0; ct < gMaxDrops; ct++) {
-                    if (d->amp > 0.01f) {
+                    if (d->ampE > 0.01f) {
                         float dx = (d->x - xShift) - x;
                         float dy = d->y - y;
                         float dist2 = dx*dx + dy*dy;
                         if (dist2 < d->spread2) {
                             float dist = sqrtf(dist2);
-                            float a = d->amp * dist * d->invSpread2;
+                            float a = d->ampE * (dist * d->invSpread);
                             z += sinf(d->spread - dist) * a;
                         }
                     }
                     d++;
                 }
-                vtx->s = (float)x * fw;
-                vtx->t = (float)y * fh;
                 vtx->z = z;
                 vtx ++;
             }
         }
         for (ct = 0; ct < gMaxDrops; ct++) {
-            gDrops[ct].spread += 1;
-            gDrops[ct].spread2 = gDrops[ct].spread * gDrops[ct].spread;
-            gDrops[ct].invSpread = 1 / gDrops[ct].spread;
-            gDrops[ct].invSpread2 = gDrops[ct].invSpread * gDrops[ct].invSpread;
-            gDrops[ct].amp = maxf(gDrops[ct].amp - 0.01f, 0);
+            updateDrop(ct);
         }
     }
 
-    // Compute the normals for lighting
     int y = 0;
     for ( ; y < (height-1); y += 1) {
         int x = 0;
@@ -160,23 +161,16 @@ void generateRipples() {
             vec3Sub(&n1, (struct vec3_s *)&(v+1)->x, (struct vec3_s *)&v->x);
             vec3Sub(&n2, (struct vec3_s *)&(v+width)->x, (struct vec3_s *)&v->x);
             vec3Cross(&n3, &n1, &n2);
-            vec3Norm(&n3);
 
             // Average of previous normal and N1 x N2
             vec3Sub(&n1, (struct vec3_s *)&(v+width+1)->x, (struct vec3_s *)&v->x);
             vec3Cross(&n2, &n1, &n2);
             vec3Add(&n3, &n3, &n2);
-            vec3Norm(&n3);
+            //vec3Norm(&n3);  // Not necessary for our constrained mesh.
 
-            v->nx = n3.x;
-            v->ny = n3.y;
-            v->nz = -n3.z;
-            v->s += v->nx * 0.005;
-            v->t += v->ny * 0.005;
+            v->s = (float)x * fw + n3.x * 0.005;
+            v->t = (float)y * fh + n3.y * 0.005;
             v += 1;
-
-            // reset Z
-            //vertices[(yOffset + x) << 3 + 7] = 0.0f;
         }
     }
 }
@@ -347,48 +341,6 @@ void drawSky() {
     vpLoadTextureMatrix(matrix);
 }
 
-void drawLighting() {
-    ambient(0.0f, 0.0f, 0.0f, 1.0f);
-    diffuse(0.0f, 0.0f, 0.0f, 1.0f);
-    specular(0.44f, 0.44f, 0.44f, 1.0f);
-    shininess(40.0f);
-
-    bindProgramFragmentStore(NAMED_PFSBackground);
-    bindProgramFragment(NAMED_PFLighting);
-    bindProgramVertex(NAMED_PVLight);
-
-    drawSimpleMesh(NAMED_WaterMesh);
-}
-
-void drawNormals() {
-    int width = State->meshWidth;
-    int height = State->meshHeight;
-
-    float *vertices = loadSimpleMeshVerticesF(NAMED_WaterMesh, 0);
-
-    bindProgramVertex(NAMED_PVSky);
-    bindProgramFragment(NAMED_PFLighting);
-
-    color(1.0f, 0.0f, 0.0f, 1.0f);
-
-    float scale = 1.0f / 10.0f;
-    int y = 0;
-    for ( ; y < height; y += 1) {
-        int yOffset = y * width;
-        int x = 0;
-        for ( ; x < width; x += 1) {
-            int offset = (yOffset + x) << 3;
-            float vx = vertices[offset + 5];
-            float vy = vertices[offset + 6];
-            float vz = vertices[offset + 7];
-            float nx = vertices[offset + 0];
-            float ny = vertices[offset + 1];
-            float nz = vertices[offset + 2];
-            drawLine(vx, vy, vz, vx + nx * scale, vy + ny * scale, vz + nz * scale);
-        }
-    }
-}
-
 int main(int index) {
     if (Drop->dropX != -1) {
         drop(Drop->dropX, Drop->dropY, 1);
@@ -399,7 +351,7 @@ int main(int index) {
     int ct;
     int add = 0;
     for (ct = 0; ct < gMaxDrops; ct++) {
-        if (gDrops[ct].amp < 0.01f) {
+        if (gDrops[ct].ampE < 0.005f) {
             add = 1;
         }
     }
@@ -420,9 +372,7 @@ int main(int index) {
 
     drawRiverbed();
     drawSky();
-    drawLighting();
     drawLeaves();
-    //drawNormals();
 
     return 1;
 }

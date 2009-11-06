@@ -64,20 +64,14 @@ class FallRS extends RenderScriptScene {
     @SuppressWarnings({"FieldCanBeLocal"})
     private ProgramFragment mPfBackground;
     @SuppressWarnings({"FieldCanBeLocal"})
-    private ProgramFragment mPfLighting;
-    @SuppressWarnings({"FieldCanBeLocal"})
     private ProgramFragment mPfSky;
     @SuppressWarnings({"FieldCanBeLocal"})
     private ProgramStore mPfsBackground;
     @SuppressWarnings({"FieldCanBeLocal"})
     private ProgramStore mPfsLeaf;
     @SuppressWarnings({"FieldCanBeLocal"})
-    private ProgramVertex mPvLight;
-    @SuppressWarnings({"FieldCanBeLocal"})
     private ProgramVertex mPvSky;
     private ProgramVertex.MatrixAllocation mPvOrthoAlloc;
-    @SuppressWarnings({"FieldCanBeLocal"})
-    private Light mLight;
     @SuppressWarnings({"FieldCanBeLocal"})
     private Sampler mSampler;
 
@@ -112,7 +106,7 @@ class FallRS extends RenderScriptScene {
         mWorldState.xOffset = xOffset;
         mState.data(mWorldState);
     }
-    
+
     @Override
     public Bundle onCommand(String action, int x, int y, int z, Bundle extras,
             boolean resultRequested) {
@@ -169,7 +163,7 @@ class FallRS extends RenderScriptScene {
 
     private void createMesh() {
         SimpleMesh.TriangleMeshBuilder tmb = new SimpleMesh.TriangleMeshBuilder(mRS, 3,
-                SimpleMesh.TriangleMeshBuilder.NORMAL | SimpleMesh.TriangleMeshBuilder.TEXTURE_0);
+                SimpleMesh.TriangleMeshBuilder.TEXTURE_0);
 
         final int width = mWidth > mHeight ? mHeight : mWidth;
         final int height = mWidth > mHeight ? mWidth : mHeight;
@@ -186,7 +180,6 @@ class FallRS extends RenderScriptScene {
         wResolution += 2;
         hResolution += 2;
 
-        tmb.setNormal(0.f, 0.f, -1.f);
         for (int y = 0; y <= hResolution; y++) {
             final boolean shift = (y & 0x1) == 0;
             final float yOffset = y * quadHeight - glHeight / 2.0f - quadHeight;
@@ -351,12 +344,6 @@ class FallRS extends RenderScriptScene {
         mPfBackground.bindSampler(mSampler, 0);
 
         builder = new ProgramFragment.Builder(mRS, null, null);
-        builder.setTexEnable(false, 0);
-        mPfLighting = builder.create();
-        mPfLighting.setName("PFLighting");
-        mPfLighting.bindSampler(mSampler, 0);
-
-        builder = new ProgramFragment.Builder(mRS, null, null);
         builder.setTexEnable(true, 0);
         builder.setTexEnvMode(MODULATE, 0);
         mPfSky = builder.create();
@@ -386,16 +373,7 @@ class FallRS extends RenderScriptScene {
         mPvOrthoAlloc = new ProgramVertex.MatrixAllocation(mRS);
         mPvOrthoAlloc.setupProjectionNormalized(mWidth, mHeight);
 
-        mLight = new Light.Builder(mRS).create();
-        mLight.setPosition(0.0f, 2.0f, -8.0f);
-
         ProgramVertex.Builder builder = new ProgramVertex.Builder(mRS, null, null);
-        builder.addLight(mLight);
-        mPvLight = builder.create();
-        mPvLight.bindAllocation(mPvOrthoAlloc);
-        mPvLight.setName("PVLight");
-
-        builder = new ProgramVertex.Builder(mRS, null, null);
         builder.setTextureMatrixEnable(true);
         mPvSky = builder.create();
         mPvSky.bindAllocation(mPvOrthoAlloc);
