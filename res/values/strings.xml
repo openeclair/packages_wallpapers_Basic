@@ -57,6 +57,13 @@
         arcs: month, day, hour, minute, and second.
     </string>
     
+	<!-- Wallpaper showing nexus -->
+    <string name="wallpaper_nexus">Nexus</string>
+    <string name="wallpaper_nexus_author">Google</string>
+    <string name="wallpaper_nexus_desc">
+        A peek inside the neural network.
+    </string>
+    
     <!-- Polar clock: title of settings activity -->
     <string name="clock_settings">Polar clock settings</string>
     <!-- Polar clock: label for "show seconds" pref -->
