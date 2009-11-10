@@ -304,7 +304,7 @@ class FallRS extends RenderScriptScene {
 
     private void loadTextures() {
         final Allocation[] textures = new Allocation[TEXTURES_COUNT];
-        textures[RSID_TEXTURE_RIVERBED] = loadTexture(R.drawable.riverbed, "TRiverbed");
+        textures[RSID_TEXTURE_RIVERBED] = loadTexture(R.drawable.pond, "TRiverbed");
         textures[RSID_TEXTURE_LEAVES] = loadTextureARGB(R.drawable.leaves, "TLeaves");
         textures[RSID_TEXTURE_SKY] = loadTextureARGB(R.drawable.clouds, "TSky");
 

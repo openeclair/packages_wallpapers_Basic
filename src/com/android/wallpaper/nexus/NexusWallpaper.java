@@ -16,38 +16,19 @@
 
 package com.android.wallpaper.nexus;
 
-import android.service.wallpaper.WallpaperService;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Rect;
 import android.graphics.Paint;
-import android.graphics.Color;
-import android.graphics.RectF;
+import android.graphics.Rect;
+import android.os.Handler;
+import android.service.wallpaper.WallpaperService;
+import android.util.MathUtils;
 import android.view.SurfaceHolder;
 import android.view.animation.AnimationUtils;
-import android.content.IntentFilter;
-import android.content.Intent;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.content.res.Resources;
-import android.content.res.XmlResourceParser;
-
-import android.os.Handler;
-import android.os.SystemClock;
-import android.text.format.Time;
-import android.util.MathUtils;
-import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.TimeZone;
-import java.io.IOException;
-
-import org.apache.harmony.misc.SystemUtils;
-import org.xmlpull.v1.XmlPullParserException;
-import static org.xmlpull.v1.XmlPullParser.*;
 
 import com.android.wallpaper.R;
 
@@ -87,15 +68,15 @@ public class NexusWallpaper extends WallpaperService {
             int length;
             Bitmap led;
             
-            public void reset(long now, int width, int height) {
+            public void reset(long now) {
                 vertical = Math.random() > 0.5;
                 reverse = Math.random() > 0.5;
                 
                 startTime = now + (long)(Math.random() * PULSE_DELAY);
                 if (vertical) {
-                    x = (int) (Math.random() * (width / mCellSize));
+                    x = (int) (Math.random() * (mBackgroundWidth / mCellSize));
                 } else {
-                    y = (int) (Math.random() * (height / mCellSize));
+                    y = (int) (Math.random() * (mBackgroundHeight / mCellSize));
                 }
                 length = PULSE_SIZE_MIN + (int)(Math.random() * PULSE_SIZE_EXTRA);
                 final double color = Math.random();
@@ -145,9 +126,9 @@ public class NexusWallpaper extends WallpaperService {
         private Bitmap mYellowLed;
         private Bitmap mGreenLed;
         
-        private ArrayList<Pulse> mPulses = new ArrayList<Pulse>();
+        private ArrayList<Pulse> mPulses;
         
-        private ArrayList<Collision> mCollisions = new ArrayList<Collision>();
+        private ArrayList<Collision> mCollisions;
 
         private int[][] mState = null;
 
@@ -156,6 +137,10 @@ public class NexusWallpaper extends WallpaperService {
         private int mRowCount;
 
         private int mCellSize;
+        
+        private int mBackgroundWidth;
+        
+        private int mBackgroundHeight;
         
         NexusEngine() {
         }
@@ -169,6 +154,10 @@ public class NexusWallpaper extends WallpaperService {
             Resources r = getResources();
             
             mBackground = BitmapFactory.decodeResource(r, R.drawable.pyramid_background, null);
+            
+            mBackgroundWidth = mBackground.getWidth();
+            mBackgroundHeight = mBackground.getHeight();
+            
             mBlueLed = BitmapFactory.decodeResource(r, R.drawable.led_blue, null);
             mRedLed = BitmapFactory.decodeResource(r, R.drawable.led_red, null);
             mYellowLed = BitmapFactory.decodeResource(r, R.drawable.led_yellow, null);
@@ -176,13 +165,23 @@ public class NexusWallpaper extends WallpaperService {
             
             mCellSize = mGreenLed.getWidth();
             
-            for (int i=0; i<NUM_PULSES; i++) {
-                Pulse p = new Pulse();
-                mPulses.add(p);
-            }
+            initializeState();
             
             if (isPreview()) {
                 mOffsetX = 0.5f;            
+            }
+        }
+
+        private void initializeState() {
+            mColumnCount = mBackgroundWidth / mCellSize;
+            mRowCount = mBackgroundHeight / mCellSize;
+            mState = new int[mColumnCount][mRowCount];
+            mCollisions = new ArrayList<Collision>();
+            mPulses = new ArrayList<Pulse>();
+            
+            for (int i=0; i<NUM_PULSES; i++) {
+                Pulse p = new Pulse();
+                mPulses.add(p);
             }
         }
 
@@ -204,6 +203,7 @@ public class NexusWallpaper extends WallpaperService {
         @Override
         public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
             super.onSurfaceChanged(holder, format, width, height);
+            initializeState();
             drawFrame();
         }
 
@@ -236,16 +236,16 @@ public class NexusWallpaper extends WallpaperService {
             try {
                 c = holder.lockCanvas();
                 if (c != null) {
-                    if (mState == null && width > 0 && height > 0) {
-                        mColumnCount = (width * 2) / mCellSize;
-                        mRowCount = height / mCellSize;
-                        mState = new int[mColumnCount][mRowCount];
-                    }
+                    final int dw = frame.width();
+                    final int bw = mBackgroundWidth;
+                    final int availw = dw-bw;
+                    int xPixels = availw < 0 ? (int)(availw*mOffsetX+.5f) : (availw/2);
+
+                    c.translate(xPixels, 0);
                     
-                    c.translate(-MathUtils.lerp(0, width, mOffsetX), 0);
                     c.drawBitmap(mBackground, 0, 0, null);
                     final long now = AnimationUtils.currentAnimationTimeMillis();
-                    drawPulses(c, now, width, height);
+                    drawPulses(c, now);
                     drawCollisions(c, now);
                     clearState();
                 }
@@ -274,8 +274,7 @@ public class NexusWallpaper extends WallpaperService {
             }
         }
                 
-        private void drawPulses(Canvas c, final long now, final int width,
-                final int height) {
+        private void drawPulses(Canvas c, final long now) {
             for (int i=0; i<NUM_PULSES; i++) {
                 Pulse p = mPulses.get(i);
                 final long startTime = p.startTime;
@@ -310,11 +309,11 @@ public class NexusWallpaper extends WallpaperService {
                         }
                         if (p.reverse) {
                             if (lastOffset < 0) {
-                                p.reset(now, width, height);
+                                p.reset(now);
                             }
                         } else {
                             if (lastOffset > mRowCount) {
-                                p.reset(now, width, height);
+                                p.reset(now);
                             }
                         }
 
@@ -338,16 +337,16 @@ public class NexusWallpaper extends WallpaperService {
                         }
                         if (p.reverse) {
                             if (lastOffset < 0) {
-                                p.reset(now, width * 2, height); 
+                                p.reset(now); 
                             }
                         } else {
                             if (lastOffset > mColumnCount) {
-                                p.reset(now, width * 2, height); 
+                                p.reset(now); 
                             }
                         }
                     }
                 } else if (startTime == 0) {
-                    p.reset(now, width * 2, height);
+                    p.reset(now);
                 }
             }
         }

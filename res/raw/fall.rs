@@ -201,14 +201,21 @@ void drawLeaf(struct Leaves_s *leaf) {
 
     float matrix[16];
     if (a > 0.0f) {
-        color(0.0f, 0.0f, 0.0f, 0.15f);
+    
+		float alpha = 1.0f;
+        if (a >= 0.4f) alpha = 1.0f - (a - 0.4f) / 0.1f;
+        
+        color(0.0f, 0.0f, 0.0f, alpha * 0.15f);
 
         if (State->rotate) {
             matrixLoadRotate(matrix, 90.0f, 0.0f, 0.0f, 1.0f);
         } else {
             matrixLoadIdentity(matrix);
         }
-        matrixTranslate(matrix, x - State->xOffset * 2, y, 0.0f);
+        
+        float shadowOffet = a / 5;
+        
+        matrixTranslate(matrix, (x - State->xOffset * 2) + (shadowOffet / 2), y - shadowOffet, tz);
         matrixScale(matrix, s, s, 1.0f);
         matrixRotate(matrix, r, 0.0f, 0.0f, 1.0f);
         vpLoadModelMatrix(matrix);
@@ -218,8 +225,6 @@ void drawLeaf(struct Leaves_s *leaf) {
                            LEAF_SIZE,  LEAF_SIZE, 0, u2, 0.0f,
                           -LEAF_SIZE,  LEAF_SIZE, 0, u1, 0.0f);
 
-        float alpha = 1.0f;
-        if (a >= 0.4f) alpha = 1.0f - (a - 0.5f) / 0.1f;
         color(1.0f, 1.0f, 1.0f, alpha);
     } else {
         color(1.0f, 1.0f, 1.0f, 1.0f);
@@ -371,7 +376,7 @@ int main(int index) {
     }
 
     drawRiverbed();
-    drawSky();
+    // drawSky();
     drawLeaves();
 
     return 1;
