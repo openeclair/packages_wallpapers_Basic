@@ -202,7 +202,7 @@ void drawLeaf(struct Leaves_s *leaf) {
     float matrix[16];
     if (a > 0.0f) {
     
-		float alpha = 1.0f;
+        float alpha = 1.0f;
         if (a >= 0.4f) alpha = 1.0f - (a - 0.4f) / 0.1f;
         
         color(0.0f, 0.0f, 0.0f, alpha * 0.15f);
@@ -319,6 +319,7 @@ void drawRiverbed() {
     vpLoadTextureMatrix(matrix);
 }
 
+/*
 void drawSky() {
     color(1.0f, 1.0f, 1.0f, 0.5f);
 
@@ -345,6 +346,7 @@ void drawSky() {
     matrixLoadIdentity(matrix);
     vpLoadTextureMatrix(matrix);
 }
+*/
 
 int main(int index) {
     if (Drop->dropX != -1) {

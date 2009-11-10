@@ -48,7 +48,7 @@ class FallRS extends RenderScriptScene {
 
     private static final int RSID_STATE = 0;
 
-    private static final int TEXTURES_COUNT = 3;
+    private static final int TEXTURES_COUNT = 2;
     private static final int RSID_TEXTURE_RIVERBED = 0;
     private static final int RSID_TEXTURE_LEAVES = 1;
     private static final int RSID_TEXTURE_SKY = 2;
@@ -306,7 +306,7 @@ class FallRS extends RenderScriptScene {
         final Allocation[] textures = new Allocation[TEXTURES_COUNT];
         textures[RSID_TEXTURE_RIVERBED] = loadTexture(R.drawable.pond, "TRiverbed");
         textures[RSID_TEXTURE_LEAVES] = loadTextureARGB(R.drawable.leaves, "TLeaves");
-        textures[RSID_TEXTURE_SKY] = loadTextureARGB(R.drawable.clouds, "TSky");
+        // textures[RSID_TEXTURE_SKY] = loadTextureARGB(R.drawable.clouds, "TSky");
 
         final int count = textures.length;
         for (int i = 0; i < count; i++) {
