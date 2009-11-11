@@ -20,10 +20,18 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Point;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.service.wallpaper.WallpaperService;
+import android.text.format.Time;
+import android.util.Log;
 import android.util.MathUtils;
 import android.view.SurfaceHolder;
 import android.view.animation.AnimationUtils;
@@ -33,115 +41,172 @@ import java.util.ArrayList;
 import com.android.wallpaper.R;
 
 public class NexusWallpaper extends WallpaperService {
-   
+
     private static final int NUM_PULSES = 20;
-    private static final int PULSE_SIZE_MIN = 30;
-    private static final int PULSE_SIZE_EXTRA = 20;
-    private static final int PULSE_SPEED = 20; // Pulse travels at 1000 / PULSE_SPEED cells/sec
-    private static final int MAX_ALPHA = 80; // 0..255
+    private static final int PULSE_SIZE = 48;
+    private static final int PULSE_SPEED = 48; // Pulse travels at 1000 / PULSE_SPEED cells/sec
+    private static final int MAX_ALPHA = 192; // 0..255
     private static final int PULSE_DELAY = 4000;
-    private static final float ALPHA_DECAY = 0.97f;
-    
+    private static final float ALPHA_DECAY = 0.9f;
+
+    private static final int ANIMATION_PERIOD = 1000/30; // in ms^-1
+
+    private static final float ZAG_PROB = 0.01f;
+
+    private static final int[] PULSE_COLORS = {
+        0xFF0066CC, 0xFFFF0000, 0xFFFFCC00, 0xFF009900,
+    };
+
     private static final String LOG_TAG = "Nexus";
 
     private final Handler mHandler = new Handler();
 
     public Engine onCreateEngine() {
         return new NexusEngine();
-    }    
-    
+    }
+
     class NexusEngine extends Engine {
 
-        class Collision {
-            int x;
-            int y;
-            long startTime;
-            public Bitmap led;
-        }
-        
         class Pulse {
-            boolean vertical;
-            boolean reverse;
-            int x;
-            int y;
+            Point v;
+            Point[] pts;
+            int start, len; // pointers into pts
+            Paint paint;
             long startTime;
-            int length;
-            Bitmap led;
-            
-            public void reset(long now) {
-                vertical = Math.random() > 0.5;
-                reverse = Math.random() > 0.5;
-                
-                startTime = now + (long)(Math.random() * PULSE_DELAY);
-                if (vertical) {
-                    x = (int) (Math.random() * (mBackgroundWidth / mCellSize));
-                } else {
-                    y = (int) (Math.random() * (mBackgroundHeight / mCellSize));
+            boolean active;
+
+            public Pulse() {
+                v = new Point(0,0);
+                pts = new Point[PULSE_SIZE];
+                for (int i=0; i<pts.length; i++) {
+                    pts[i] = new Point(0,0);
                 }
-                length = PULSE_SIZE_MIN + (int)(Math.random() * PULSE_SIZE_EXTRA);
-                final double color = Math.random();
-                if (color < 0.25) {
-                    led = mBlueLed;
-                } else if (color < 0.5) {
-                    led = mRedLed;
-                } else if (color < 0.75) {
-                    led = mGreenLed;
-                } else {
-                    led = mYellowLed;
-                }
-                
+                paint = new Paint(Paint.FILTER_BITMAP_FLAG|Paint.DITHER_FLAG);
+                start = len = 0;
             }
 
-            public void clearState(int[][] state) {
-                if (vertical) {
-                    int rowCount = state[0].length;
-                    for (int row = 0; row < rowCount; row++) {
-                        state[x][row] = 0;
+            public void zag() {
+                // take a random 90-degree turn
+                int t = v.x; v.x = v.y; v.y = t;
+                if (Math.random() < 0.5) {
+                    v.negate();
+                }
+            }
+
+            public void randomize(long now) {
+                int x, y;
+                if (Math.random() < 0.5) {
+                    // vertical
+                    x = (int)(Math.random() * mColumnCount);
+                    if (Math.random() < 0.5) {
+                        v.set(0, 1);
+                        y = 0;
+                    } else {
+                        v.set(0, -1);
+                        y = mRowCount;
                     }
                 } else {
-                    int colCount = state.length;
-                    for (int col = 0; col < colCount; col++) {
-                        state[col][y] = 0;
+                    // horizontal
+                    y = (int)(Math.random() * mRowCount);
+                    if (Math.random() < 0.5) {
+                        v.set(1, 0);
+                        x = 0;
+                    } else {
+                        v.set(-1, 0);
+                        x = mColumnCount;
                     }
+                }
+                start = 0;
+                len = 1;
+                pts[start].set(x, y);
+                active = false;
+
+                startTime = now + (long)(Math.random() * PULSE_DELAY);
+
+                /* random colors
+                final float hsv[] = {(float)Math.random()*360, 0.75f, 1.0f};
+                int color = Color.HSVToColor(hsv);
+                */
+                // Google colors
+                paint.setColor(PULSE_COLORS[(int)(Math.random()*4)]);
+
+                paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SCREEN));
+
+            }
+
+            public Point getHead() {
+                return pts[(start+len-1)%PULSE_SIZE];
+            }
+            public Point getTail() {
+                return pts[start];
+            }
+
+            public void step(long now) {
+                if (len == 0) {
+                    // not inited
+                    randomize(now);
+                }
+                if (now < startTime) return;
+                active = true;
+                final Point neck = getHead();
+                if (len < PULSE_SIZE) len++;
+                else start = (start+1)%PULSE_SIZE;
+
+                if (Math.random() < ZAG_PROB) {
+                    zag();
+                }
+
+                getHead().set(neck.x + v.x, neck.y + v.y);
+            }
+
+            public void draw(Canvas c) {
+                if (!active) return;
+                boolean onScreen = false;
+                int a = MAX_ALPHA;
+                final Rect r = new Rect(0, 0, mCellSize, mCellSize);
+                for (int i=len-1; i>=0; i--) {
+                    paint.setAlpha(a);
+                    a *= ALPHA_DECAY;
+                    Point p = pts[(start+i)%PULSE_SIZE];
+                    r.offsetTo(p.x * mCellSize, p.y * mCellSize);
+                    c.drawRect(r, paint);
+                    if (!onScreen)
+                        onScreen = !(p.x < 0 || p.x > mColumnCount || p.y < 0 || p.y > mRowCount);
+                }
+
+                if (!onScreen) {
+                    // Time to die.
+                    start = len = 0;
+                    active = false;
                 }
             }
         }
-        
-        Paint mPaint = new Paint();
 
         private final Runnable mDrawNexus = new Runnable() {
             public void run() {
                 drawFrame();
+                step();
             }
         };
 
         private boolean mVisible;
 
         private float mOffsetX;
-        
-        private Bitmap mBackground;
-        
-        private Bitmap mBlueLed;
-        private Bitmap mRedLed;
-        private Bitmap mYellowLed;
-        private Bitmap mGreenLed;
-        
-        private ArrayList<Pulse> mPulses;
-        
-        private ArrayList<Collision> mCollisions;
 
-        private int[][] mState = null;
+        private Bitmap mBackground;
+
+        private Bitmap mGreenLed;
+
+        private ArrayList<Pulse> mPulses = new ArrayList<Pulse>();
 
         private int mColumnCount;
-
         private int mRowCount;
 
         private int mCellSize;
-        
+
         private int mBackgroundWidth;
-        
         private int mBackgroundHeight;
-        
+
         NexusEngine() {
         }
 
@@ -149,39 +214,36 @@ public class NexusWallpaper extends WallpaperService {
         public void onCreate(SurfaceHolder surfaceHolder) {
             super.onCreate(surfaceHolder);
 
-            final Paint paint = mPaint;
-
             Resources r = getResources();
-            
+
             mBackground = BitmapFactory.decodeResource(r, R.drawable.pyramid_background, null);
-            
+
             mBackgroundWidth = mBackground.getWidth();
             mBackgroundHeight = mBackground.getHeight();
-            
-            mBlueLed = BitmapFactory.decodeResource(r, R.drawable.led_blue, null);
-            mRedLed = BitmapFactory.decodeResource(r, R.drawable.led_red, null);
-            mYellowLed = BitmapFactory.decodeResource(r, R.drawable.led_yellow, null);
+
             mGreenLed = BitmapFactory.decodeResource(r, R.drawable.led_green, null);
-            
+
             mCellSize = mGreenLed.getWidth();
-            
+
             initializeState();
-            
+
             if (isPreview()) {
-                mOffsetX = 0.5f;            
+                mOffsetX = 0.5f;
             }
         }
 
         private void initializeState() {
             mColumnCount = mBackgroundWidth / mCellSize;
             mRowCount = mBackgroundHeight / mCellSize;
-            mState = new int[mColumnCount][mRowCount];
-            mCollisions = new ArrayList<Collision>();
             mPulses = new ArrayList<Pulse>();
-            
+
             for (int i=0; i<NUM_PULSES; i++) {
                 Pulse p = new Pulse();
                 mPulses.add(p);
+            }
+
+            if (isPreview()) {
+                mOffsetX = 0.5f;
             }
         }
 
@@ -194,7 +256,7 @@ public class NexusWallpaper extends WallpaperService {
         @Override
         public void onVisibilityChanged(boolean visible) {
             mVisible = visible;
-            if (!visible) {             
+            if (!visible) {
                 mHandler.removeCallbacks(mDrawNexus);
             }
             drawFrame();
@@ -202,7 +264,6 @@ public class NexusWallpaper extends WallpaperService {
 
         @Override
         public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-            super.onSurfaceChanged(holder, format, width, height);
             initializeState();
             drawFrame();
         }
@@ -225,29 +286,28 @@ public class NexusWallpaper extends WallpaperService {
             mOffsetX = xOffset;
             drawFrame();
         }
-        
+
+        void step() {
+            final long now = AnimationUtils.currentAnimationTimeMillis();
+            for (int i=0; i<mPulses.size(); i++) {
+                Pulse p = mPulses.get(i);
+                ((Pulse)mPulses.get(i)).step(now);
+            }
+        }
+
         void drawFrame() {
             final SurfaceHolder holder = getSurfaceHolder();
             final Rect frame = holder.getSurfaceFrame();
-            final int width = frame.width();
-            final int height = frame.height();
 
             Canvas c = null;
             try {
                 c = holder.lockCanvas();
                 if (c != null) {
-                    final int dw = frame.width();
-                    final int bw = mBackgroundWidth;
-                    final int availw = dw-bw;
-                    int xPixels = availw < 0 ? (int)(availw*mOffsetX+.5f) : (availw/2);
-
-                    c.translate(xPixels, 0);
-                    
+                    c.translate(-MathUtils.lerp(0, frame.width(), mOffsetX), 0);
                     c.drawBitmap(mBackground, 0, 0, null);
-                    final long now = AnimationUtils.currentAnimationTimeMillis();
-                    drawPulses(c, now);
-                    drawCollisions(c, now);
-                    clearState();
+                    for (int i=0; i<mPulses.size(); i++) {
+                        ((Pulse)mPulses.get(i)).draw(c);
+                    }
                 }
             } finally {
                 if (c != null) holder.unlockCanvasAndPost(c);
@@ -255,141 +315,8 @@ public class NexusWallpaper extends WallpaperService {
 
             mHandler.removeCallbacks(mDrawNexus);
             if (mVisible) {
-                mHandler.postDelayed(mDrawNexus, 1000 / 25);
+                mHandler.postDelayed(mDrawNexus, ANIMATION_PERIOD);
             }
-        }
-
-        
-        private void drawCollisions(Canvas c, final long now) {
-            final int count = mCollisions.size();
-            for (int i=count - 1; i > 0; i--) {
-                Collision collision = mCollisions.get(i);
-                final long age = now - collision.startTime;
-                if (age > 1000) {
-                    mCollisions.remove(i);
-                } else {
-                    mPaint.setAlpha(MAX_ALPHA*2 - (int)(MAX_ALPHA*2*((float)age/1000)));
-                    c.drawBitmap(collision.led, collision.x * mCellSize, collision.y * mCellSize, mPaint);
-                }
-            }
-        }
-                
-        private void drawPulses(Canvas c, final long now) {
-            for (int i=0; i<NUM_PULSES; i++) {
-                Pulse p = mPulses.get(i);
-                final long startTime = p.startTime;
-                final Bitmap led = p.led;
-                
-                if (startTime > 0 && now > startTime) {
-                    final int x = p.x;
-                    final int y = p.y;
-                    final int length = p.length;
-                    int alpha = MAX_ALPHA;
-                    int lastOffset;
-                    
-                    int offset = (int) ((AnimationUtils.currentAnimationTimeMillis() - startTime) / PULSE_SPEED);
-                    
-                    if (p.vertical) {
-
-                        if (p.reverse) {
-                            offset = mRowCount - offset;
-                        }
-                        lastOffset = offset;
-
-                        for (int j = 0; j < length; j++) {
-                            mPaint.setAlpha(alpha);
-                            if (p.reverse) {
-                                lastOffset = offset + j;
-                            } else {
-                                lastOffset = offset - j;
-                            }
-                            c.drawBitmap(led, x * mCellSize, lastOffset * mCellSize, mPaint);
-                            detectCollision(now, led, x, lastOffset, alpha);
-                            alpha *= ALPHA_DECAY;
-                        }
-                        if (p.reverse) {
-                            if (lastOffset < 0) {
-                                p.reset(now);
-                            }
-                        } else {
-                            if (lastOffset > mRowCount) {
-                                p.reset(now);
-                            }
-                        }
-
-                    } else {
-                        
-                        if (p.reverse) {
-                            offset = mColumnCount - offset;
-                        }
-                        lastOffset = offset;
-                        
-                        for (int j=0; j<length; j++) {
-                            mPaint.setAlpha(alpha);
-                            if (p.reverse) {
-                                lastOffset = offset + j;
-                            } else {
-                                lastOffset = offset - j;
-                            }
-                            c.drawBitmap(led, lastOffset * mCellSize, y * mCellSize, mPaint);
-                            alpha *= ALPHA_DECAY;
-                            detectCollision(now, led, lastOffset, y, alpha);
-                        }
-                        if (p.reverse) {
-                            if (lastOffset < 0) {
-                                p.reset(now); 
-                            }
-                        } else {
-                            if (lastOffset > mColumnCount) {
-                                p.reset(now); 
-                            }
-                        }
-                    }
-                } else if (startTime == 0) {
-                    p.reset(now);
-                }
-            }
-        }
-
-        private void detectCollision(long now, Bitmap led, int x, int y, int alpha) {
-            final int[][] state = mState;
-            if (x >= 0 && y >= 0 && x < state.length && y < state[x].length) {
-                
-                if ((alpha > MAX_ALPHA / 2) &&  (state[x][y] > MAX_ALPHA / 2)) {
-                    
-                    boolean found = false;
-                    final int count = mCollisions.size();
-                    for (int i=count - 1; i > 0; i--) {
-                        Collision collision = mCollisions.get(i);
-                        if (x == collision.x && y == collision.y) {
-                            found = true;
-                            break;
-                        }
-                    }
-                        
-                    if (!found) {
-                        Collision c = new Collision();
-                        c.startTime = now;
-                        c.x = x;
-                        c.y = y;
-                        c.led = led;
-                        mCollisions.add(c);
-                    }
-                } else {
-                    state[x][y] = alpha;
-                }
-            }
-
-        }
-
-        private void clearState() {
-            if (mState != null) {
-                for (int i = 0; i < NUM_PULSES; i++) {
-                    Pulse p = mPulses.get(i);
-                    p.clearState(mState);
-                }
-            }
-            
         }
     }
 }
