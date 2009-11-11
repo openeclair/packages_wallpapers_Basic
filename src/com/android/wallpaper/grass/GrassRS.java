@@ -27,6 +27,7 @@ import android.renderscript.Allocation;
 import android.renderscript.ProgramVertex;
 import static android.renderscript.Element.*;
 import static android.util.MathUtils.*;
+import android.util.Log;
 import android.renderscript.ScriptC;
 import android.renderscript.Type;
 import android.renderscript.Dimension;
@@ -50,8 +51,11 @@ import java.util.TimeZone;
 import java.util.Calendar;
 
 class GrassRS extends RenderScriptScene {
-    private static final int LOCATION_UPDATE_MIN_TIME = 60 * 60 * 1000; // 1 hour
-    private static final int LOCATION_UPDATE_MIN_DISTANCE = 150 * 1000; // 150 km
+    private static final String LOG_TAG = "Grass";
+    private static final boolean DEBUG = true;
+    
+    private static final int LOCATION_UPDATE_MIN_TIME = DEBUG ? 10000 : 60 * 60 * 1000; // 1 hour
+    private static final int LOCATION_UPDATE_MIN_DISTANCE = DEBUG ? 1 : 150 * 1000; // 150 km
 
     private static final float TESSELATION = 0.5f;
     private static final int TEXTURES_COUNT = 5;
@@ -125,6 +129,7 @@ class GrassRS extends RenderScriptScene {
         if (mTimezoneTracker == null) {
             mTimezoneTracker = new TimezoneTracker();
             IntentFilter filter = new IntentFilter();
+            filter.addAction(Intent.ACTION_DATE_CHANGED);
             filter.addAction(Intent.ACTION_TIME_CHANGED);
             filter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
     
@@ -428,6 +433,11 @@ class GrassRS extends RenderScriptScene {
 
             final double sunset = calculator.computeSunsetTime(SunCalculator.ZENITH_CIVIL, now);
             mWorldState.dusk = SunCalculator.timeToDayFraction(sunset);
+
+            if (DEBUG) {
+                Log.d(LOG_TAG, "location = " + location + ", timeZone = " + timeZone +
+                    ", dawn = " + mWorldState.dawn + ", dusk = " + mWorldState.dusk);
+            }
         } else {
             mWorldState.dawn = 0.3f;
             mWorldState.dusk = 0.75f;
