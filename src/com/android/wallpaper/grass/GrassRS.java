@@ -54,8 +54,8 @@ class GrassRS extends RenderScriptScene {
     private static final String LOG_TAG = "Grass";
     private static final boolean DEBUG = true;
     
-    private static final int LOCATION_UPDATE_MIN_TIME = DEBUG ? 10000 : 60 * 60 * 1000; // 1 hour
-    private static final int LOCATION_UPDATE_MIN_DISTANCE = DEBUG ? 1 : 150 * 1000; // 150 km
+    private static final int LOCATION_UPDATE_MIN_TIME = DEBUG ? 5 * 60 * 1000 : 60 * 60 * 1000; // 1 hour
+    private static final int LOCATION_UPDATE_MIN_DISTANCE = DEBUG ? 10 : 150 * 1000; // 150 km
 
     private static final float TESSELATION = 0.5f;
     private static final int TEXTURES_COUNT = 5;
