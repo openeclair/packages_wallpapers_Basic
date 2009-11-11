@@ -181,16 +181,11 @@ class FallRS extends RenderScriptScene {
         hResolution += 2;
 
         for (int y = 0; y <= hResolution; y++) {
-            final boolean shift = (y & 0x1) == 0;
             final float yOffset = y * quadHeight - glHeight / 2.0f - quadHeight;
             final float t = 1.0f - y / (float) hResolution;
             for (int x = 0; x <= wResolution; x++) {
                 tmb.setTexture(x / (float) wResolution, t);
-                if (shift) {
-                    tmb.addVertex(-1.0f + x * quadWidth - quadWidth, yOffset, 0.0f);
-                } else {
-                    tmb.addVertex(-1.0f + x * quadWidth - quadWidth * 0.5f, yOffset, 0.0f);
-                }
+                tmb.addVertex(-1.0f + x * quadWidth - quadWidth, yOffset, 0.0f);
             }
         }
 

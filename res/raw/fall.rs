@@ -119,44 +119,37 @@ void generateRipples() {
 
     float fw = 1.0f / width;
     float fh = 1.0f / height;
-    {
-        int x, y, ct;
-        struct vert_s *vtx = vert;
-        for (y=0; y < height; y++) {
-            for (x=0; x < width; x++) {
-                struct drop_s * d = &gDrops[0];
-                float z = 0;
+    int x, y, ct;
+    struct vert_s *v = vert;
+    for (y=0; y < height; y++) {
+        for (x=0; x < width; x++) {
+            struct drop_s * d = &gDrops[0];
+            float z = 0;
 
-                for (ct = 0; ct < gMaxDrops; ct++) {
-                    if (d->ampE > 0.01f) {
-                        float dx = (d->x - xShift) - x;
-                        float dy = d->y - y;
-                        float dist2 = dx*dx + dy*dy;
-                        if (dist2 < d->spread2) {
-                            float dist = sqrtf(dist2);
-                            float a = d->ampE * (dist * d->invSpread);
-                            z += sinf(d->spread - dist) * a;
-                        }
+            for (ct = 0; ct < gMaxDrops; ct++) {
+                if (d->ampE > 0.01f) {
+                    float dx = (d->x - xShift) - x;
+                    float dy = d->y - y;
+                    float dist2 = dx*dx + dy*dy;
+                    if (dist2 < d->spread2) {
+                        float dist = sqrtf(dist2);
+                        float a = d->ampE * (dist * d->invSpread);
+                        z += sinf(d->spread - dist) * a;
                     }
-                    d++;
                 }
-                vtx->z = z;
-                vtx ++;
+                d++;
             }
-        }
-        for (ct = 0; ct < gMaxDrops; ct++) {
-            updateDrop(ct);
+            v->z = z;
+            v ++;
         }
     }
+    for (ct = 0; ct < gMaxDrops; ct++) {
+        updateDrop(ct);
+    }
 
-    int y = 0;
-    for ( ; y < (height-1); y += 1) {
-        int x = 0;
-        int yOffset = y * width;
-        struct vert_s *v = vert;
-        v += y * width;
-
-        for ( ; x < (width-1); x += 1) {
+    v = vert;
+    for (y = 0; y < height; y += 1) {
+        for (x = 0; x < width; x += 1) {
             struct vec3_s n1, n2, n3;
             vec3Sub(&n1, (struct vec3_s *)&(v+1)->x, (struct vec3_s *)&v->x);
             vec3Sub(&n2, (struct vec3_s *)&(v+width)->x, (struct vec3_s *)&v->x);
@@ -168,8 +161,9 @@ void generateRipples() {
             vec3Add(&n3, &n3, &n2);
             //vec3Norm(&n3);  // Not necessary for our constrained mesh.
 
-            v->s = (float)x * fw + n3.x * 0.005;
-            v->t = (float)y * fh + n3.y * 0.005;
+            v->s = (float)x * fw + n3.x;// * 0.2;
+            v->t = (float)y * fh + n3.y;// * 0.2;
+            v->z = 0;
             v += 1;
         }
     }
@@ -201,10 +195,10 @@ void drawLeaf(struct Leaves_s *leaf) {
 
     float matrix[16];
     if (a > 0.0f) {
-    
+
         float alpha = 1.0f;
         if (a >= 0.4f) alpha = 1.0f - (a - 0.4f) / 0.1f;
-        
+
         color(0.0f, 0.0f, 0.0f, alpha * 0.15f);
 
         if (State->rotate) {
@@ -212,9 +206,9 @@ void drawLeaf(struct Leaves_s *leaf) {
         } else {
             matrixLoadIdentity(matrix);
         }
-        
+
         float shadowOffet = a / 5;
-        
+
         matrixTranslate(matrix, (x - State->xOffset * 2) + (shadowOffet / 2), y - shadowOffet, tz);
         matrixScale(matrix, s, s, 1.0f);
         matrixRotate(matrix, r, 0.0f, 0.0f, 1.0f);
@@ -350,7 +344,7 @@ void drawSky() {
 
 int main(int index) {
     if (Drop->dropX != -1) {
-        drop(Drop->dropX, Drop->dropY, 1);
+        drop(Drop->dropX, Drop->dropY, 2);
         Drop->dropX = -1;
         Drop->dropY = -1;
     }
