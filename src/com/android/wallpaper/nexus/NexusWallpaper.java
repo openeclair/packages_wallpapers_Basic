@@ -27,31 +27,31 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.service.wallpaper.WallpaperService;
-import android.text.format.Time;
-import android.util.Log;
 import android.util.MathUtils;
 import android.view.SurfaceHolder;
 import android.view.animation.AnimationUtils;
 
-import java.util.ArrayList;
+import java.util.Set;
+import java.util.HashSet;
 
 import com.android.wallpaper.R;
 
 public class NexusWallpaper extends WallpaperService {
 
-    private static final int NUM_PULSES = 20;
-    private static final int PULSE_SIZE = 48;
-    private static final int PULSE_SPEED = 48; // Pulse travels at 1000 / PULSE_SPEED cells/sec
+    private static final int NUM_PULSES = 18;
+    private static final int MAX_PULSES = 42;
+    private static final int PULSE_SIZE = 16;
     private static final int MAX_ALPHA = 192; // 0..255
-    private static final int PULSE_DELAY = 4000;
-    private static final float ALPHA_DECAY = 0.9f;
+    private static final int PULSE_DELAY = 5000; // random restart time, in ms
+    private static final float ALPHA_DECAY = 0.85f;
+
+    private static final boolean ACCEPTS_TAP = true;
 
     private static final int ANIMATION_PERIOD = 1000/30; // in ms^-1
-
-    private static final float ZAG_PROB = 0.01f;
 
     private static final int[] PULSE_COLORS = {
         0xFF0066CC, 0xFFFF0000, 0xFFFFCC00, 0xFF009900,
@@ -67,13 +67,21 @@ public class NexusWallpaper extends WallpaperService {
 
     class NexusEngine extends Engine {
 
-        class Pulse {
+        class Automaton {
+            public void step(long now) { }
+            public void draw(Canvas c) { }
+        }
+
+        class Pulse extends Automaton {
             Point v;
             Point[] pts;
             int start, len; // pointers into pts
             Paint paint;
             long startTime;
-            boolean active;
+            boolean started;
+
+            public float zagProb = 0.01f;
+            public int speed = 1;
 
             public Pulse() {
                 v = new Point(0,0);
@@ -82,44 +90,74 @@ public class NexusWallpaper extends WallpaperService {
                     pts[i] = new Point(0,0);
                 }
                 paint = new Paint(Paint.FILTER_BITMAP_FLAG|Paint.DITHER_FLAG);
+                paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SCREEN));
+
                 start = len = 0;
+            }
+            public Pulse(long now, int x, int y, int dx, int dy) {
+                this();
+                start(now, x, y, dx, dy);
+            }
+
+            boolean isDiagonal() {
+                return v.x != 0 && v.y != 0;
             }
 
             public void zag() {
                 // take a random 90-degree turn
-                int t = v.x; v.x = v.y; v.y = t;
-                if (Math.random() < 0.5) {
-                    v.negate();
+                if (isDiagonal()) {
+                    if (Math.random() < 0.5) {
+                        v.x *= -1;
+                    } else {
+                        v.y *= -1;
+                    }
+                } else {
+                    int t = v.x; v.x = v.y; v.y = t;
+                    if (Math.random() < 0.5) {
+                        v.negate();
+                    }
                 }
             }
 
-            public void randomize(long now) {
+            public void start(long now, int x, int y, int dx, int dy) {
+                start = 0;
+                len = 1;
+                pts[start].set(x, y);
+                v.x = dx;
+                v.y = dy;
+                startTime = now;
+                paint.setColor(PULSE_COLORS[(int)Math.floor(Math.random()*PULSE_COLORS.length)]);
+                started = false;
+            }
+
+            public void startRandomEdge(long now, boolean diag) {
                 int x, y;
                 if (Math.random() < 0.5) {
-                    // vertical
+                    // top or bottom edge
                     x = (int)(Math.random() * mColumnCount);
                     if (Math.random() < 0.5) {
-                        v.set(0, 1);
+                        v.y = 1;
                         y = 0;
                     } else {
-                        v.set(0, -1);
+                        v.y = -1;
                         y = mRowCount;
                     }
+                    v.x = diag ? ((Math.random() < 0.5) ? 1 : -1) : 0;
                 } else {
-                    // horizontal
+                    // left or right edge
                     y = (int)(Math.random() * mRowCount);
                     if (Math.random() < 0.5) {
-                        v.set(1, 0);
+                        v.set(1, 1);
                         x = 0;
                     } else {
-                        v.set(-1, 0);
+                        v.set(-1, 1);
                         x = mColumnCount;
                     }
+                    v.y = diag ? ((Math.random() < 0.5) ? 1 : -1) : 0;
                 }
                 start = 0;
                 len = 1;
                 pts[start].set(x, y);
-                active = false;
 
                 startTime = now + (long)(Math.random() * PULSE_DELAY);
 
@@ -127,11 +165,9 @@ public class NexusWallpaper extends WallpaperService {
                 final float hsv[] = {(float)Math.random()*360, 0.75f, 1.0f};
                 int color = Color.HSVToColor(hsv);
                 */
-                // Google colors
-                paint.setColor(PULSE_COLORS[(int)(Math.random()*4)]);
-
-                paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SCREEN));
-
+                // select colors
+                paint.setColor(PULSE_COLORS[(int)Math.floor(Math.random()*PULSE_COLORS.length)]);
+                started = false;
             }
 
             public Point getHead() {
@@ -142,31 +178,32 @@ public class NexusWallpaper extends WallpaperService {
             }
 
             public void step(long now) {
-                if (len == 0) {
-                    // not inited
-                    randomize(now);
-                }
                 if (now < startTime) return;
-                active = true;
-                final Point neck = getHead();
-                if (len < PULSE_SIZE) len++;
-                else start = (start+1)%PULSE_SIZE;
+                started = true;
 
-                if (Math.random() < ZAG_PROB) {
+                for (int i=0; i<speed; i++) {
+                    final Point neck = getHead();
+                    if (len < PULSE_SIZE) len++;
+                    else start = (start+1)%PULSE_SIZE;
+
+                    getHead().set(neck.x + v.x,
+                                  neck.y + v.y);
+                }
+
+                if (Math.random() < zagProb) {
                     zag();
                 }
-
-                getHead().set(neck.x + v.x, neck.y + v.y);
             }
 
             public void draw(Canvas c) {
-                if (!active) return;
+                if (!started) return;
                 boolean onScreen = false;
                 int a = MAX_ALPHA;
                 final Rect r = new Rect(0, 0, mCellSize, mCellSize);
                 for (int i=len-1; i>=0; i--) {
                     paint.setAlpha(a);
                     a *= ALPHA_DECAY;
+                    if (a < 0.05f) break; // note: you should decrease PULSE_SIZE
                     Point p = pts[(start+i)%PULSE_SIZE];
                     r.offsetTo(p.x * mCellSize, p.y * mCellSize);
                     c.drawRect(r, paint);
@@ -176,8 +213,7 @@ public class NexusWallpaper extends WallpaperService {
 
                 if (!onScreen) {
                     // Time to die.
-                    start = len = 0;
-                    active = false;
+                    recycleOrRemovePulse(this);
                 }
             }
         }
@@ -197,7 +233,8 @@ public class NexusWallpaper extends WallpaperService {
 
         private Bitmap mGreenLed;
 
-        private ArrayList<Pulse> mPulses = new ArrayList<Pulse>();
+        private Set<Automaton> mPulses = new HashSet<Automaton>();
+        private Set<Automaton> mDeadPulses = new HashSet<Automaton>();
 
         private int mColumnCount;
         private int mRowCount;
@@ -235,12 +272,10 @@ public class NexusWallpaper extends WallpaperService {
         private void initializeState() {
             mColumnCount = mBackgroundWidth / mCellSize;
             mRowCount = mBackgroundHeight / mCellSize;
-            mPulses = new ArrayList<Pulse>();
+            mPulses.clear();
+            mDeadPulses.clear();
 
-            for (int i=0; i<NUM_PULSES; i++) {
-                Pulse p = new Pulse();
-                mPulses.add(p);
-            }
+            final long now = AnimationUtils.currentAnimationTimeMillis();
 
             if (isPreview()) {
                 mOffsetX = 0.5f;
@@ -264,6 +299,14 @@ public class NexusWallpaper extends WallpaperService {
 
         @Override
         public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+            super.onSurfaceChanged(holder, format, width, height);
+            initializeState();
+            drawFrame();
+        }
+
+        @Override
+        public void onDesiredSizeChanged(int desiredWidth, int desiredHeight) {
+            super.onDesiredSizeChanged(desiredWidth, desiredHeight);
             initializeState();
             drawFrame();
         }
@@ -283,15 +326,81 @@ public class NexusWallpaper extends WallpaperService {
         @Override
         public void onOffsetsChanged(float xOffset, float yOffset,
                 float xStep, float yStep, int xPixels, int yPixels) {
+            super.onOffsetsChanged(xOffset, yOffset, xStep, yStep, xPixels, yPixels);
             mOffsetX = xOffset;
             drawFrame();
         }
 
+
+        @Override
+        public Bundle onCommand(String action, int x, int y, int z, Bundle extras,
+                boolean resultRequested) {
+            if (ACCEPTS_TAP && "android.wallpaper.tap".equals(action)) {
+
+                final SurfaceHolder holder = getSurfaceHolder();
+                final Rect frame = holder.getSurfaceFrame();
+
+                final int dw = frame.width();
+                final int bw = mBackgroundWidth;
+                final int cellX = (int)((x + mOffsetX * (bw-dw)) / mCellSize);
+                final int cellY = (int)(y / mCellSize);
+                Pulse p = new Pulse();
+                p.zagProb = 0;
+                p.start(0, cellX, cellY, 0, 1);
+                addPulse(p);
+                p = new Pulse();
+                p.zagProb = 0;
+                p.start(0, cellX, cellY, 1, 0);
+                addPulse(p);
+                p = new Pulse();
+                p.zagProb = 0;
+                p.start(0, cellX, cellY, -1, 0);
+                addPulse(p);
+                p = new Pulse();
+                p.zagProb = 0;
+                p.start(0, cellX, cellY, 0, -1);
+                addPulse(p);
+            } else if ("android.home.drop".equals(action)) {
+                // TODO: something awesome
+            }
+            return null;
+        }
+
+        void addPulse(Pulse p) {
+            if (mPulses.size() > MAX_PULSES) return;
+            mPulses.add(p);
+        }
+
+        void removePulse(Pulse p) {
+            mDeadPulses.add(p);
+        }
+
+        void recycleOrRemovePulse(Pulse p) {
+            if (mPulses.size() < NUM_PULSES) {
+                p.startRandomEdge(AnimationUtils.currentAnimationTimeMillis(), false);
+            } else {
+                removePulse(p);
+            }
+        }
+
         void step() {
             final long now = AnimationUtils.currentAnimationTimeMillis();
-            for (int i=0; i<mPulses.size(); i++) {
-                Pulse p = mPulses.get(i);
-                ((Pulse)mPulses.get(i)).step(now);
+
+            // not enough pulses? add some
+            for (int i=mPulses.size(); i<NUM_PULSES; i++) {
+                Pulse p = new Pulse();
+                p.startRandomEdge(now, false);
+                mPulses.add(p);
+            }
+
+            for (Automaton p : mDeadPulses) {
+                mPulses.remove(p);
+            }
+            mDeadPulses.clear();
+
+            // update state
+            for (Automaton p : mPulses) {
+                p.step(now);
             }
         }
 
@@ -303,10 +412,16 @@ public class NexusWallpaper extends WallpaperService {
             try {
                 c = holder.lockCanvas();
                 if (c != null) {
-                    c.translate(-MathUtils.lerp(0, frame.width(), mOffsetX), 0);
+                    final int dw = frame.width();
+                    final int bw = mBackgroundWidth;
+                    final int availw = dw-bw;
+                    final int xPixels = availw < 0 ? (int)(availw*mOffsetX+.5f) : (availw/2);
+
+                    c.translate(xPixels, 0);
+
                     c.drawBitmap(mBackground, 0, 0, null);
-                    for (int i=0; i<mPulses.size(); i++) {
-                        ((Pulse)mPulses.get(i)).draw(c);
+                    for (Automaton p : mPulses) {
+                        p.draw(c);
                     }
                 }
             } finally {
