@@ -117,6 +117,16 @@ class FallRS extends RenderScriptScene {
         }
         return null;
     }
+    
+    @Override
+    public void start() {
+        super.start();
+        final WorldState worldState = mWorldState;
+        final int width = worldState.width;
+        final int x = width / 4 + (int)(Math.random() * (width / 2));
+        final int y = worldState.height / 4 + (int)(Math.random() * (worldState.height / 2));
+        addDrop(x + (width * worldState.xOffset), y);
+    }
 
     @Override
     public void resize(int width, int height) {

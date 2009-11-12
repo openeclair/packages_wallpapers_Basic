@@ -17,7 +17,7 @@
 #pragma stateFragment(PFBackground)
 #pragma stateStore(PFSBackground)
 
-#define LEAVES_TEXTURES_COUNT 4
+#define LEAVES_TEXTURES_COUNT 8
 #define LEAF_SIZE 0.55f
 
 float skyOffsetX;
@@ -255,7 +255,7 @@ void drawLeaf(struct Leaves_s *leaf) {
         r += spin;
         leaf->angle = r;
     } else {
-        a -= 0.005f;
+        a -= 0.006f;
         leaf->altitude = a;
         r += spin * 2.0f;
         leaf->angle = r;
@@ -267,11 +267,12 @@ void drawLeaf(struct Leaves_s *leaf) {
         int sprite = randf(LEAVES_TEXTURES_COUNT);
         leaf->x = randf2(-State->glWidth, State->glWidth);
         leaf->y = randf2(-State->glHeight * 0.5f, State->glHeight * 0.5f);
+        
         leaf->scale = randf2(0.4f, 0.5f);
-        leaf->spin = degf(randf2(-0.02f, 0.02f)) * 0.25f;
+        leaf->spin = degf(randf2(-0.02f, 0.02f)) * 0.35f;
         leaf->u1 = sprite / (float) LEAVES_TEXTURES_COUNT;
         leaf->u2 = (sprite + 1) / (float) LEAVES_TEXTURES_COUNT;
-        leaf->altitude = 0.6f;
+        leaf->altitude = 0.7f;
         leaf->rippled = -1.0f;
         leaf->deltaX = randf2(-0.02f, 0.02f) / 60.0f;
         leaf->deltaY = -0.08f * randf2(0.9f, 1.1f) / 60.0f;
