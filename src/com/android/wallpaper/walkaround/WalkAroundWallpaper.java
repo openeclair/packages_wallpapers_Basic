@@ -49,6 +49,23 @@ public class WalkAroundWallpaper extends WallpaperService {
         super.onCreate();
     }
 
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+
+        if (mCamera != null) {
+            if (mCamera.previewEnabled()) {
+                boolean portrait = newConfig.orientation == Configuration.ORIENTATION_PORTRAIT;
+                final Camera.Parameters params = mCamera.getParameters();
+                params.set("orientation", portrait ? "portrait" : "landscape");
+                mCamera.setParameters(params);
+
+                if (mCamera.previewEnabled()) mCamera.stopPreview();
+                mCamera.startPreview();
+            }
+        }
+    }
+
     private void startCamera() {
         if (mCamera == null) {
             mCamera = Camera.open();
@@ -191,6 +208,7 @@ public class WalkAroundWallpaper extends WallpaperService {
 
             params.set("orientation", portrait ? "portrait" : "landscape");
             mCamera.setParameters(params);
+
             mCamera.startPreview();
         }
     }
