@@ -54,7 +54,7 @@ public abstract class RenderScriptWallpaper<T extends RenderScriptScene> extends
             if (mRs != null) {
                 mRs.destroy();
                 mRs = null;
-            }            
+            }
         }
 
         @Override
@@ -62,7 +62,7 @@ public abstract class RenderScriptWallpaper<T extends RenderScriptScene> extends
             super.onVisibilityChanged(visible);
             if (mRenderer != null) {
                 if (visible) {
-                    mRenderer.start();                
+                    mRenderer.start();
                 } else {
                     mRenderer.stop();
                 }
@@ -72,6 +72,9 @@ public abstract class RenderScriptWallpaper<T extends RenderScriptScene> extends
         @Override
         public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
             super.onSurfaceChanged(holder, format, width, height);
+            if (mRs != null) {
+                mRs.contextSetSurface(width, height, holder.getSurface());
+            }
             if (mRenderer == null) {
                 mRenderer = createScene(width, height);
                 mRenderer.init(mRs, getResources(), isPreview());
@@ -82,7 +85,7 @@ public abstract class RenderScriptWallpaper<T extends RenderScriptScene> extends
         }
 
         @Override
-        public void onOffsetsChanged(float xOffset, float yOffset, 
+        public void onOffsetsChanged(float xOffset, float yOffset,
                 float xStep, float yStep, int xPixels, int yPixels) {
             mRenderer.setOffset(xOffset, yOffset, xPixels, yPixels);
         }
@@ -95,7 +98,7 @@ public abstract class RenderScriptWallpaper<T extends RenderScriptScene> extends
             while (surface == null) {
                 surface = holder.getSurface();
             }
-            mRs = new RenderScript(surface, false, false);
+            mRs = new RenderScript(false, false);
         }
 
         @Override
@@ -109,6 +112,6 @@ public abstract class RenderScriptWallpaper<T extends RenderScriptScene> extends
                 Bundle extras, boolean resultRequested) {
             return mRenderer.onCommand(action, x, y, z, extras, resultRequested);
         }
-        
+
     }
 }
