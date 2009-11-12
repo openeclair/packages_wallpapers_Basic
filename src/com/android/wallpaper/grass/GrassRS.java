@@ -27,7 +27,6 @@ import android.renderscript.Allocation;
 import android.renderscript.ProgramVertex;
 import static android.renderscript.Element.*;
 import static android.util.MathUtils.*;
-import android.util.Log;
 import android.renderscript.ScriptC;
 import android.renderscript.Type;
 import android.renderscript.Dimension;
@@ -51,8 +50,9 @@ import java.util.TimeZone;
 import java.util.Calendar;
 
 class GrassRS extends RenderScriptScene {
+    @SuppressWarnings({"UnusedDeclaration"})
     private static final String LOG_TAG = "Grass";
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
     
     private static final int LOCATION_UPDATE_MIN_TIME = DEBUG ? 5 * 60 * 1000 : 60 * 60 * 1000; // 1 hour
     private static final int LOCATION_UPDATE_MIN_DISTANCE = DEBUG ? 10 : 150 * 1000; // 150 km
@@ -433,11 +433,6 @@ class GrassRS extends RenderScriptScene {
 
             final double sunset = calculator.computeSunsetTime(SunCalculator.ZENITH_CIVIL, now);
             mWorldState.dusk = SunCalculator.timeToDayFraction(sunset);
-
-            if (DEBUG) {
-                Log.d(LOG_TAG, "location = " + location + ", timeZone = " + timeZone +
-                    ", dawn = " + mWorldState.dawn + ", dusk = " + mWorldState.dusk);
-            }
         } else {
             mWorldState.dawn = 0.3f;
             mWorldState.dusk = 0.75f;
