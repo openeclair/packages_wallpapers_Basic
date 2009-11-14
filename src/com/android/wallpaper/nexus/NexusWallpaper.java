@@ -19,11 +19,14 @@ package com.android.wallpaper.nexus;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.LightingColorFilter;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -42,19 +45,19 @@ import com.android.wallpaper.R;
 
 public class NexusWallpaper extends WallpaperService {
 
-    private static final int NUM_PULSES = 18;
-    private static final int MAX_PULSES = 42;
+    private static final int NUM_PULSES = 12;
+    private static final int MAX_PULSES = 32;
     private static final int PULSE_SIZE = 16;
-    private static final int MAX_ALPHA = 192; // 0..255
+    private static final int MAX_ALPHA = 128; // 0..255
     private static final int PULSE_DELAY = 5000; // random restart time, in ms
     private static final float ALPHA_DECAY = 0.85f;
 
     private static final boolean ACCEPTS_TAP = true;
 
-    private static final int ANIMATION_PERIOD = 1000/30; // in ms^-1
+    private static final int ANIMATION_PERIOD = 1000/50; // in ms^-1
 
     private static final int[] PULSE_COLORS = {
-        0xFF0066CC, 0xFFFF0000, 0xFFFFCC00, 0xFF009900,
+        0xFF0066CC, 0xDDFF0000, 0xBBFFCC00, 0xEE009900,
     };
 
     private static final String LOG_TAG = "Nexus";
@@ -77,10 +80,11 @@ public class NexusWallpaper extends WallpaperService {
             Point[] pts;
             int start, len; // pointers into pts
             Paint paint;
+            Paint glowPaint;
             long startTime;
             boolean started;
 
-            public float zagProb = 0.01f;
+            public float zagProb = 0.007f;
             public int speed = 1;
 
             public Pulse() {
@@ -91,6 +95,9 @@ public class NexusWallpaper extends WallpaperService {
                 }
                 paint = new Paint(Paint.FILTER_BITMAP_FLAG|Paint.DITHER_FLAG);
                 paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SCREEN));
+
+                glowPaint = new Paint(paint);
+                glowPaint.setAlpha((int)(MAX_ALPHA*0.7f));
 
                 start = len = 0;
             }
@@ -126,8 +133,13 @@ public class NexusWallpaper extends WallpaperService {
                 v.x = dx;
                 v.y = dy;
                 startTime = now;
-                paint.setColor(PULSE_COLORS[(int)Math.floor(Math.random()*PULSE_COLORS.length)]);
+                setColor(PULSE_COLORS[(int)Math.floor(Math.random()*PULSE_COLORS.length)]);
                 started = false;
+            }
+
+            public void setColor(int c) {
+                paint.setColor(c);
+                glowPaint.setColorFilter(new LightingColorFilter(paint.getColor(), 0));
             }
 
             public void startRandomEdge(long now, boolean diag) {
@@ -166,7 +178,7 @@ public class NexusWallpaper extends WallpaperService {
                 int color = Color.HSVToColor(hsv);
                 */
                 // select colors
-                paint.setColor(PULSE_COLORS[(int)Math.floor(Math.random()*PULSE_COLORS.length)]);
+                setColor(PULSE_COLORS[(int)Math.floor(Math.random()*PULSE_COLORS.length)]);
                 started = false;
             }
 
@@ -199,6 +211,10 @@ public class NexusWallpaper extends WallpaperService {
                 if (!started) return;
                 boolean onScreen = false;
                 int a = MAX_ALPHA;
+
+                Point head = getHead();
+                c.drawBitmap(mGlow, (head.x-1)*mCellSize, (head.y-1)*mCellSize, glowPaint);
+
                 final Rect r = new Rect(0, 0, mCellSize, mCellSize);
                 for (int i=len-1; i>=0; i--) {
                     paint.setAlpha(a);
@@ -210,6 +226,7 @@ public class NexusWallpaper extends WallpaperService {
                     if (!onScreen)
                         onScreen = !(p.x < 0 || p.x > mColumnCount || p.y < 0 || p.y > mRowCount);
                 }
+
 
                 if (!onScreen) {
                     // Time to die.
@@ -232,6 +249,8 @@ public class NexusWallpaper extends WallpaperService {
         private Bitmap mBackground;
 
         private Bitmap mGreenLed;
+        
+        private Bitmap mGlow;
 
         private Set<Automaton> mPulses = new HashSet<Automaton>();
         private Set<Automaton> mDeadPulses = new HashSet<Automaton>();
@@ -261,6 +280,14 @@ public class NexusWallpaper extends WallpaperService {
             mGreenLed = BitmapFactory.decodeResource(r, R.drawable.led_green, null);
 
             mCellSize = mGreenLed.getWidth();
+
+            mGlow = Bitmap.createBitmap(3*mCellSize, 3*mCellSize, Bitmap.Config.ARGB_8888);
+            Canvas c = new Canvas(mGlow);
+            Paint p = new Paint();
+            final int halfCell = mCellSize/2;
+            p.setMaskFilter(new BlurMaskFilter(halfCell, BlurMaskFilter.Blur.NORMAL));
+            p.setColor(Color.WHITE);
+            c.drawRect(halfCell, halfCell, 5*halfCell, 5*halfCell, p);
 
             initializeState();
 
@@ -344,6 +371,45 @@ public class NexusWallpaper extends WallpaperService {
                 final int bw = mBackgroundWidth;
                 final int cellX = (int)((x + mOffsetX * (bw-dw)) / mCellSize);
                 final int cellY = (int)(y / mCellSize);
+                
+                int colorIdx = (int)(Math.random() * PULSE_COLORS.length);
+
+                Pulse p = new Pulse();
+                p.zagProb = 0;
+                p.start(0, cellX, cellY, 0, 1);
+                p.setColor(PULSE_COLORS[colorIdx]);
+                addPulse(p);
+                colorIdx = (colorIdx + 1) % PULSE_COLORS.length;
+
+                p = new Pulse();
+                p.zagProb = 0;
+                p.start(0, cellX, cellY, 1, 0);
+                p.setColor(PULSE_COLORS[colorIdx]);
+                addPulse(p);
+                colorIdx = (colorIdx + 1) % PULSE_COLORS.length;
+
+                p = new Pulse();
+                p.zagProb = 0;
+                p.start(0, cellX, cellY, -1, 0);
+                p.setColor(PULSE_COLORS[colorIdx]);
+                addPulse(p);
+                colorIdx = (colorIdx + 1) % PULSE_COLORS.length;
+
+                p = new Pulse();
+                p.zagProb = 0;
+                p.start(0, cellX, cellY, 0, -1);
+                p.setColor(PULSE_COLORS[colorIdx]);
+                addPulse(p);
+                colorIdx = (colorIdx + 1) % PULSE_COLORS.length;
+
+            } else if ("android.home.drop".equals(action)) {
+                final SurfaceHolder holder = getSurfaceHolder();
+                final Rect frame = holder.getSurfaceFrame();
+
+                final int dw = frame.width();
+                final int bw = mBackgroundWidth;
+                final int cellX = (int)((x + mOffsetX * (bw-dw)) / mCellSize);
+                final int cellY = (int)(y / mCellSize);
                 Pulse p = new Pulse();
                 p.zagProb = 0;
                 p.start(0, cellX, cellY, 0, 1);
@@ -360,8 +426,23 @@ public class NexusWallpaper extends WallpaperService {
                 p.zagProb = 0;
                 p.start(0, cellX, cellY, 0, -1);
                 addPulse(p);
-            } else if ("android.home.drop".equals(action)) {
-                // TODO: something awesome
+
+                p = new Pulse();
+                p.zagProb = 0;
+                p.start(0, cellX, cellY, -1, -1);
+                addPulse(p);
+                p = new Pulse();
+                p.zagProb = 0;
+                p.start(0, cellX, cellY, 1, -1);
+                addPulse(p);
+                p = new Pulse();
+                p.zagProb = 0;
+                p.start(0, cellX, cellY, 1, 1);
+                addPulse(p);
+                p = new Pulse();
+                p.zagProb = 0;
+                p.start(0, cellX, cellY, -1, 1);
+                addPulse(p);
             }
             return null;
         }
