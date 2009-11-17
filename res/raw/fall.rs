@@ -22,6 +22,8 @@
 
 float skyOffsetX;
 float skyOffsetY;
+float g_DT;
+int g_LastTime;
 
 struct vert_s {
     float x;
@@ -75,14 +77,14 @@ void initLeaves() {
         leaf->u2 = (sprite + 1) / (float) LEAVES_TEXTURES_COUNT;
         leaf->altitude = -1.0f;
         leaf->rippled = 1.0f;
-        leaf->deltaX = randf2(-0.02f, 0.02f) / 60.0f;
-        leaf->deltaY = -0.08f * randf2(0.9f, 1.1f) / 60.0f;
+        leaf->deltaX = randf2(-0.02f, 0.02f) / 2.0f;
+        leaf->deltaY = -0.08f * randf2(0.9f, 1.1f) / 2.0f;
         leaf++;
     }
 }
 
 void updateDrop(int ct) {
-    gDrops[ct].spread += 1;
+    gDrops[ct].spread += 30.f * g_DT;
     gDrops[ct].spread2 = gDrops[ct].spread * gDrops[ct].spread;
     gDrops[ct].invSpread = 1 / gDrops[ct].spread;
     gDrops[ct].invSpread2 = gDrops[ct].invSpread * gDrops[ct].invSpread;
@@ -250,12 +252,12 @@ void drawLeaf(struct Leaves_s *leaf) {
             leaf->spin = spin;
             leaf->rippled = 1.0f;
         }
-        leaf->x = x + leaf->deltaX;
-        leaf->y = y + leaf->deltaY;
+        leaf->x = x + leaf->deltaX * g_DT;
+        leaf->y = y + leaf->deltaY * g_DT;
         r += spin;
         leaf->angle = r;
     } else {
-        a -= 0.006f;
+        a -= 0.15f * g_DT;
         leaf->altitude = a;
         r += spin * 2.0f;
         leaf->angle = r;
@@ -267,15 +269,15 @@ void drawLeaf(struct Leaves_s *leaf) {
         int sprite = randf(LEAVES_TEXTURES_COUNT);
         leaf->x = randf2(-State->glWidth, State->glWidth);
         leaf->y = randf2(-State->glHeight * 0.5f, State->glHeight * 0.5f);
-        
+
         leaf->scale = randf2(0.4f, 0.5f);
         leaf->spin = degf(randf2(-0.02f, 0.02f)) * 0.35f;
         leaf->u1 = sprite / (float) LEAVES_TEXTURES_COUNT;
         leaf->u2 = (sprite + 1) / (float) LEAVES_TEXTURES_COUNT;
         leaf->altitude = 0.7f;
         leaf->rippled = -1.0f;
-        leaf->deltaX = randf2(-0.02f, 0.02f) / 60.0f;
-        leaf->deltaY = -0.08f * randf2(0.9f, 1.1f) / 60.0f;
+        leaf->deltaX = randf2(-0.02f, 0.02f) / 2.0f;
+        leaf->deltaY = -0.08f * randf2(0.9f, 1.1f) / 2.0f;
     }
 }
 
@@ -344,6 +346,13 @@ void drawSky() {
 */
 
 int main(int index) {
+    // Compute dt in seconds.
+    int newTime = uptimeMillis();
+    g_DT = (newTime - g_LastTime) / 1000.f;
+    g_LastTime = newTime;
+    g_DT = minf(g_DT, 0.2f);
+
+
     if (Drop->dropX != -1) {
         drop(Drop->dropX, Drop->dropY, 2);
         Drop->dropX = -1;
