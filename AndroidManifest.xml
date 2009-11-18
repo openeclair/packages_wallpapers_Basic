@@ -121,7 +121,8 @@
             <meta-data android:name="android.service.wallpaper" android:resource="@xml/polar_clock" />
         </service>
 
-        <service
+        <!-- RE-ENABLE WHEN #2246948 IS FIXED -->
+        <!-- <service
             android:label="@string/wallpaper_walkaround"
             android:name="com.android.wallpaper.walkaround.WalkAroundWallpaper"
             android:permission="android.permission.BIND_WALLPAPER">
@@ -129,7 +130,7 @@
                 <action android:name="android.service.wallpaper.WallpaperService" />
             </intent-filter>
             <meta-data android:name="android.service.wallpaper" android:resource="@xml/walkaround" />
-        </service>
+        </service> -->
 
     </application>
 
