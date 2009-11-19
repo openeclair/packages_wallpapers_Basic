@@ -21,6 +21,6 @@
 <!-- about the walk around wallpaper. -->
 
 <wallpaper xmlns:android="http://schemas.android.com/apk/res/android"
-    android:wallpaperAuthor="@string/wallpaper_walkaround_author"
-    android:wallpaperDescription="@string/wallpaper_walkaround_desc"
+    android:author="@string/wallpaper_walkaround_author"
+    android:description="@string/wallpaper_walkaround_desc"
     android:thumbnail="@drawable/seethru_thumb" />

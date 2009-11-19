@@ -34,6 +34,8 @@ import static android.renderscript.ProgramStore.BlendDstFunc;
 import static android.renderscript.ProgramStore.BlendSrcFunc;
 import static android.renderscript.ProgramFragment.EnvMode.*;
 import static android.renderscript.Element.*;
+
+import android.app.WallpaperManager;
 import android.graphics.BitmapFactory;
 import android.graphics.Bitmap;
 import static android.util.MathUtils.*;
@@ -110,9 +112,9 @@ class FallRS extends RenderScriptScene {
     @Override
     public Bundle onCommand(String action, int x, int y, int z, Bundle extras,
             boolean resultRequested) {
-        if ("android.wallpaper.tap".equals(action)) {
+        if (WallpaperManager.COMMAND_TAP.equals(action)) {
             addDrop(x + (mWorldState.width * mWorldState.xOffset), y);
-        } else if ("android.home.drop".equals(action)) {
+        } else if (WallpaperManager.COMMAND_DROP.equals(action)) {
             addDrop(x + (mWorldState.width * mWorldState.xOffset), y);
         }
         return null;

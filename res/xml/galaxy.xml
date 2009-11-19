@@ -21,6 +21,6 @@
 <!-- about the galaxy wallpaper. -->
 
 <wallpaper xmlns:android="http://schemas.android.com/apk/res/android"
-    android:wallpaperAuthor="@string/wallpaper_galaxy_author"
-    android:wallpaperDescription="@string/wallpaper_galaxy_desc"
+    android:author="@string/wallpaper_galaxy_author"
+    android:description="@string/wallpaper_galaxy_desc"
     android:thumbnail="@drawable/galaxy_thumb" />

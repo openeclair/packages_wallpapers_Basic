@@ -21,6 +21,6 @@
 <!-- about the nexus wallpaper. -->
 
 <wallpaper xmlns:android="http://schemas.android.com/apk/res/android"
-    android:wallpaperAuthor="@string/wallpaper_nexus_author"
-    android:wallpaperDescription="@string/wallpaper_nexus_desc"
+    android:author="@string/wallpaper_nexus_author"
+    android:description="@string/wallpaper_nexus_desc"
     android:thumbnail="@drawable/nexus_thumb" />
