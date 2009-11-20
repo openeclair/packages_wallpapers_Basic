@@ -56,10 +56,8 @@ class FallRS extends RenderScriptScene {
     private static final int RSID_TEXTURE_SKY = 2;
 
     private static final int RSID_RIPPLE_MAP = 1;
-    private static final int RSID_LEAVES = 3;
-    private static final int RSID_DROP = 4;
+    private static final int RSID_DROP = 2;
 
-    private static final int LEAVES_COUNT = 14;
 
     private final BitmapFactory.Options mOptionsARGB = new BitmapFactory.Options();
 
@@ -90,9 +88,6 @@ class FallRS extends RenderScriptScene {
     private WorldState mWorldState;
 
     private Allocation mRippleMap;
-
-    private Allocation mLeaves;
-    private Type mLeavesType;
 
     private float mGlHeight;
 
@@ -154,7 +149,6 @@ class FallRS extends RenderScriptScene {
         ScriptC.Builder sb = new ScriptC.Builder(mRS);
         sb.setType(mStateType, "State", RSID_STATE);
         sb.setType(mDropType, "Drop", RSID_DROP);
-        sb.setType(mLeavesType, "Leaves", RSID_LEAVES);
         sb.setScript(mResources, R.raw.fall);
         Script.Invokable invokable = sb.addInvokable("initLeaves");
         sb.setRoot(true);
@@ -165,7 +159,6 @@ class FallRS extends RenderScriptScene {
 
         script.bindAllocation(mState, RSID_STATE);
         script.bindAllocation(mRippleMap, RSID_RIPPLE_MAP);
-        script.bindAllocation(mLeaves, RSID_LEAVES);
         script.bindAllocation(mDropState, RSID_DROP);
 
         invokable.execute();
@@ -229,12 +222,6 @@ class FallRS extends RenderScriptScene {
 
         createState(rippleMapSize);
         createRippleMap(rippleMapSize);
-        createLeaves();
-    }
-
-    private void createLeaves() {
-        mLeavesType = Type.createFromClass(mRS, Leaf.class, LEAVES_COUNT, "Leaf");
-        mLeaves = Allocation.createTyped(mRS, mLeavesType);
     }
 
     private void createRippleMap(int rippleMapSize) {
@@ -274,7 +261,6 @@ class FallRS extends RenderScriptScene {
         mWorldState.meshHeight = mMeshHeight;
         mWorldState.rippleMapSize = rippleMapSize;
         mWorldState.rippleIndex = 0;
-        mWorldState.leavesCount = LEAVES_COUNT;
         mWorldState.glWidth = 2.0f;
         mWorldState.glHeight = mGlHeight;
         mWorldState.skySpeedX = random(-0.001f, 0.001f);
@@ -294,21 +280,7 @@ class FallRS extends RenderScriptScene {
         mDropState = Allocation.createTyped(mRS, mDropType);
         mDropState.data(mDrop);
     }
-
-    static class Leaf {
-        public float x;
-        public float y;
-        public float scale;
-        public float angle;
-        public float spin;
-        public float u1;
-        public float u2;
-        public float altitude;
-        public float rippled;
-        public float deltaX;
-        public float deltaY;
-    }
-
+    
     private void loadTextures() {
         final Allocation[] textures = new Allocation[TEXTURES_COUNT];
         textures[RSID_TEXTURE_RIVERBED] = loadTexture(R.drawable.pond, "TRiverbed");

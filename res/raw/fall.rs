@@ -19,6 +19,7 @@
 
 #define LEAVES_TEXTURES_COUNT 8
 #define LEAF_SIZE 0.55f
+#define LEAVES_COUNT 14
 
 float skyOffsetX;
 float skyOffsetY;
@@ -46,6 +47,27 @@ struct drop_s {
 struct drop_s gDrops[10];
 int gMaxDrops;
 
+struct Leaves_s {
+    float x;
+    float y;
+    float scale;
+    float angle;
+    float spin;
+    float u1;
+    float u2;
+    float altitude;
+    float rippled;
+    float deltaX;
+    float deltaY;
+    int newLeaf;
+};
+
+struct Leaves_s gLeavesStore[LEAVES_COUNT];
+
+struct Leaves_s* gLeaves[LEAVES_COUNT];
+
+struct Leaves_s* gNextLeaves[LEAVES_COUNT];
+
 void init() {
     int ct;
     gMaxDrops = 10;
@@ -60,13 +82,13 @@ void init() {
 }
 
 void initLeaves() {
-    struct Leaves_s *leaf = Leaves;
-    int leavesCount = State->leavesCount;
+    struct Leaves_s *leaf = gLeavesStore;
     float width = State->glWidth * 2;
     float height = State->glHeight;
 
     int i;
-    for (i = 0; i < leavesCount; i ++) {
+    for (i = 0; i < LEAVES_COUNT; i ++) {
+        gLeaves[i] = leaf;
         int sprite = randf(LEAVES_TEXTURES_COUNT);
         leaf->x = randf2(-width * 0.5f, width * 0.5f);
         leaf->y = randf2(-height * 0.5f, height * 0.5f);
@@ -178,7 +200,7 @@ void genLeafDrop(struct Leaves_s *leaf, float amp) {
 
 }
 
-void drawLeaf(struct Leaves_s *leaf) {
+int drawLeaf(struct Leaves_s *leaf) {
 
     float x = leaf->x;
     float y = leaf->y;
@@ -263,6 +285,7 @@ void drawLeaf(struct Leaves_s *leaf) {
         leaf->angle = r;
     }
 
+    int newLeaf = 0;
     if (-LEAF_SIZE * s + x > State->glWidth || LEAF_SIZE * s + x < -State->glWidth ||
             LEAF_SIZE * s + y < -State->glHeight / 2.0f) {
 
@@ -278,7 +301,10 @@ void drawLeaf(struct Leaves_s *leaf) {
         leaf->rippled = -1.0f;
         leaf->deltaX = randf2(-0.02f, 0.02f) / 2.0f;
         leaf->deltaY = -0.08f * randf2(0.9f, 1.1f) / 2.0f;
+        leaf->newLeaf = 1;
+        newLeaf = 1;
     }
+    return newLeaf;
 }
 
 void drawLeaves() {
@@ -289,12 +315,39 @@ void drawLeaves() {
 
     color(1.0f, 1.0f, 1.0f, 1.0f);
 
-    int leavesCount = State->leavesCount;
-    struct Leaves_s *leaf = Leaves;
+    int newLeaves = 0;
     int i = 0;
-    for ( ; i < leavesCount; i += 1) {
-        drawLeaf(leaf);
-        leaf += 1;
+    for ( ; i < LEAVES_COUNT; i += 1) {
+        if (drawLeaf(gLeaves[i])) {
+            newLeaves = 1;
+            
+        }
+    }
+    
+    if (newLeaves > 0) {    
+        int index = 0;
+        
+        // Copy all the old leaves to the beginning of gNextLeaves
+        for (i=0; i < LEAVES_COUNT; i++) {
+            if (gLeaves[i]->newLeaf == 0) {
+                gNextLeaves[index] = gLeaves[i];
+                index++;
+            }
+        }
+        
+        // Now copy all the newly falling leaves to the end of gNextLeaves
+        for (i=0; i < LEAVES_COUNT; i++) {
+            if (gLeaves[i]->newLeaf > 0) {
+                gNextLeaves[index] = gLeaves[i];
+                gNextLeaves[index]->newLeaf = 0;
+                index++;
+            }
+        }
+        
+        // And move everything in gNextLeaves back to gLeaves
+        for (i=0; i < LEAVES_COUNT; i++) {
+            gLeaves[i] = gNextLeaves[i];
+        }
     }
 
     float matrix[16];
@@ -306,7 +359,7 @@ void drawRiverbed() {
     bindTexture(NAMED_PFBackground, 0, NAMED_TRiverbed);
 
     float matrix[16];
-    matrixLoadScale(matrix, 0.5f, -1.0f, 1.0f);
+    matrixLoadScale(matrix, 0.5f * 960.0f / 1024.0f, -1.0f * 800.0f / 1024.0f, 1.0f);
     matrixTranslate(matrix, State->xOffset, 0.0f, 0.0f);
     vpLoadTextureMatrix(matrix);
 
@@ -368,8 +421,8 @@ int main(int index) {
     }
 
     if (add) {
-        int i = (int)randf(State->leavesCount);
-        genLeafDrop(&Leaves[i], randf(0.3f) + 0.1f);
+        int i = (int)randf(LEAVES_COUNT);
+        genLeafDrop(gLeaves[i], randf(0.3f) + 0.1f);
     }
 
     generateRipples();
