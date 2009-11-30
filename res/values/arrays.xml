@@ -18,7 +18,7 @@
 -->
 
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-  <string-array name="polar_clock_palette_names">
+  <string-array name="polar_clock_palette_names" translatable="false">
     <item>@string/palette_gray</item>
     <item>@string/palette_white_c</item>
     <item>@string/palette_black_c</item>
@@ -28,7 +28,7 @@
     <item>@string/palette_oceanic</item>
     <item>@string/palette_zenburn</item>
   </string-array>
-  <string-array name="polar_clock_palette_ids">
+  <string-array name="polar_clock_palette_ids" translatable="false">
     <item>palette_gray</item>
     <item>palette_white_c</item>
     <item>palette_black_c</item>
