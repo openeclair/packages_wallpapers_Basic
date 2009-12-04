@@ -48,7 +48,7 @@ import java.util.TimeZone;
 class NexusRS extends RenderScriptScene {
 
     private static final int RSID_STATE = 0;
-    
+
     private static final int RSID_COMMAND = 1;
 
     private static final int TEXTURES_COUNT = 3;
@@ -56,30 +56,32 @@ class NexusRS extends RenderScriptScene {
     private final BitmapFactory.Options mOptionsARGB = new BitmapFactory.Options();
 
     private ProgramFragment mPfTexture;
-    
+
     private ProgramFragment mPfColor;
 
     private ProgramStore mPsSolid;
-    
+
     private ProgramStore mPsBlend;
-    
+
     private ProgramVertex mPvOrtho;
-    
+
     private ProgramVertex.MatrixAllocation mPvOrthoAlloc;
 
     private Sampler mSampler;
 
     private Allocation mState;
-    
+
     private Type mStateType;
 
     private WorldState mWorldState;
-    
+
     private Allocation mCommandAllocation;
-    
+
     private Type mCommandType;
 
     private CommandState mCommand;
+
+    private Allocation[] mTextures = new Allocation[TEXTURES_COUNT];
 
     public NexusRS(int width, int height) {
         super(width, height);
@@ -93,7 +95,7 @@ class NexusRS extends RenderScriptScene {
         mWorldState.xOffset = xOffset;
         mState.data(mWorldState);
     }
-    
+
     @Override
     public void start() {
         super.start();
@@ -132,9 +134,9 @@ class NexusRS extends RenderScriptScene {
 
         script.bindAllocation(mState, RSID_STATE);
         script.bindAllocation(mCommandAllocation, RSID_COMMAND);
-        
+
         invokable.execute();
-        
+
         return script;
     }
 
@@ -164,7 +166,7 @@ class NexusRS extends RenderScriptScene {
         mStateType = Type.createFromClass(mRS, WorldState.class, 1, "WorldState");
         mState = Allocation.createTyped(mRS, mStateType);
         mState.data(mWorldState);
-        
+
         mCommand = new CommandState();
         mCommand.x = -1;
         mCommand.y = -1;
@@ -176,14 +178,13 @@ class NexusRS extends RenderScriptScene {
     }
 
     private void loadTextures() {
-        final Allocation[] textures = new Allocation[TEXTURES_COUNT];
-        textures[0] = loadTexture(R.drawable.pyramid_background, "TBackground");
-        textures[1] = loadTextureARGB(R.drawable.pulse, "TPulse");        
-        textures[2] = loadTextureARGB(R.drawable.glow, "TGlow");   
-        
-        final int count = textures.length;
+        mTextures[0] = loadTexture(R.drawable.pyramid_background, "TBackground");
+        mTextures[1] = loadTextureARGB(R.drawable.pulse, "TPulse");
+        mTextures[2] = loadTextureARGB(R.drawable.glow, "TGlow");
+
+        final int count = mTextures.length;
         for (int i = 0; i < count; i++) {
-            textures[i].uploadToTexture(0);
+            mTextures[i].uploadToTexture(0);
         }
     }
 
@@ -215,7 +216,7 @@ class NexusRS extends RenderScriptScene {
         mPfTexture = builder.create();
         mPfTexture.setName("PFTexture");
         mPfTexture.bindSampler(mSampler, 0);
-        
+
         builder = new ProgramFragment.Builder(mRS, null, null);
         builder.setTexEnable(true, 0);
         builder.setTexEnvMode(REPLACE, 0);
@@ -232,7 +233,7 @@ class NexusRS extends RenderScriptScene {
         builder.setDepthMask(true);
         mPsSolid = builder.create();
         mPsSolid.setName("PSSolid");
-        
+
         builder = new ProgramStore.Builder(mRS, null, null);
         builder.setDepthFunc(ALWAYS);
        //  builder.setBlendFunc(BlendSrcFunc.SRC_ALPHA, BlendDstFunc.ONE_MINUS_SRC_ALPHA);
@@ -262,7 +263,7 @@ class NexusRS extends RenderScriptScene {
         final int dw = mWorldState.width;
         final int bw = 960;
         x = (int) (x + mWorldState.xOffset * (bw-dw));
-        
+
         if ("android.wallpaper.tap".equals(action)) {
             sendCommand(1, x, y);
         } else if ("android.home.drop".equals(action)) {
