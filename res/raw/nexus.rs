@@ -21,8 +21,8 @@
 #define MAX_EXTRAS           40
 #define PULSE_SIZE           14 // Size in pixels of a cell
 #define HALF_PULSE_SIZE      7
-#define GLOW_SIZE            32 // Size of the leading glow in pixels
-#define HALF_GLOW_SIZE       16 
+#define GLOW_SIZE            64 // Size of the leading glow in pixels
+#define HALF_GLOW_SIZE       32 
 #define SPEED                0.2f // (200 / 1000) Pixels per ms
 #define SPEED_VARIANCE       0.3f
 #define PULSE_NORMAL         0
@@ -160,6 +160,7 @@ void drawPulses(struct pulse_s * pulseSet, int setSize) {
 	                    0.0f);
 	            }
 	        } else if (p->dx > 0) {
+				x += PULSE_SIZE; // need to start on the other side of this cell
 	            matrixRotate(matrix, 180.0f, 0.0f, 0.0f, 1.0f);
 	            vpLoadTextureMatrix(matrix);
 	            float xx = x - (TRAIL_SIZE * PULSE_SIZE);
@@ -194,6 +195,7 @@ void drawPulses(struct pulse_s * pulseSet, int setSize) {
 	                    0.0f);
 	            }
 	        } else if (p->dy > 0) {
+				y += PULSE_SIZE; // need to start on the other side of this cell
 	            matrixRotate(matrix, 90.0f, 0.0f, 0.0f, 1.0f);
 	            vpLoadTextureMatrix(matrix);
 	            float yy = y - (TRAIL_SIZE * PULSE_SIZE);
