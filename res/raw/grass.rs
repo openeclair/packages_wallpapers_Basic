@@ -197,7 +197,7 @@ void drawBlades(float brightness, float xOffset) {
     float *bladeStruct = loadArrayF(RSID_BLADES, 0);
     float *bladeBuffer = loadArrayF(RSID_BLADES_BUFFER, 0);
     int *bladeColor = loadArrayI32(RSID_BLADES_BUFFER, 0);
-    
+
     float now = uptimeMillis() * 0.00004f;
 
     for ( ; i < bladesCount; i += 1) {
@@ -239,7 +239,7 @@ int main(int launchID) {
         } else {                                        // Draw sunrise->day
             drawSunrise(width, height);
             alpha(normf(half, morning, now));
-            drawNoon(width, height);    
+            drawNoon(width, height);
         }
     } else if (now > morning && now < afternoon) {      // Draw day
         drawNoon(width, height);
@@ -264,5 +264,5 @@ int main(int launchID) {
 
     drawBlades(newB, x);
 
-    return 1;
+    return 30;
 }

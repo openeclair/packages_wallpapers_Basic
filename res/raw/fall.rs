@@ -320,13 +320,13 @@ void drawLeaves() {
     for ( ; i < LEAVES_COUNT; i += 1) {
         if (drawLeaf(gLeaves[i])) {
             newLeaves = 1;
-            
+
         }
     }
-    
-    if (newLeaves > 0) {    
+
+    if (newLeaves > 0) {
         int index = 0;
-        
+
         // Copy all the old leaves to the beginning of gNextLeaves
         for (i=0; i < LEAVES_COUNT; i++) {
             if (gLeaves[i]->newLeaf == 0) {
@@ -334,7 +334,7 @@ void drawLeaves() {
                 index++;
             }
         }
-        
+
         // Now copy all the newly falling leaves to the end of gNextLeaves
         for (i=0; i < LEAVES_COUNT; i++) {
             if (gLeaves[i]->newLeaf > 0) {
@@ -343,7 +343,7 @@ void drawLeaves() {
                 index++;
             }
         }
-        
+
         // And move everything in gNextLeaves back to gLeaves
         for (i=0; i < LEAVES_COUNT; i++) {
             gLeaves[i] = gNextLeaves[i];
@@ -438,5 +438,5 @@ int main(int index) {
     // drawSky();
     drawLeaves();
 
-    return 1;
+    return 30;
 }

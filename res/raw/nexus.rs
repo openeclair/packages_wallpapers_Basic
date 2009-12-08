@@ -22,7 +22,7 @@
 #define PULSE_SIZE           14 // Size in pixels of a cell
 #define HALF_PULSE_SIZE      7
 #define GLOW_SIZE            64 // Size of the leading glow in pixels
-#define HALF_GLOW_SIZE       32 
+#define HALF_GLOW_SIZE       32
 #define SPEED                0.2f // (200 / 1000) Pixels per ms
 #define SPEED_VARIANCE       0.3f
 #define PULSE_NORMAL         0
@@ -90,9 +90,9 @@ void initPulse(struct pulse_s * pulse, int pulseType) {
         }
     }
     pulse->startTime = gNow + (int)randf(MAX_DELAY);
-    
+
     pulse->color = (int)randf(4.0f);
-    
+
     pulse->pulseType = pulseType;
     if (pulseType == PULSE_EXTRA) {
         pulse->active = 0;
@@ -130,18 +130,18 @@ void drawPulses(struct pulse_s * pulseSet, int setSize) {
     bindProgramFragmentStore(NAMED_PSBlend);
 
     float matrix[16];
-    
+
     int i;
     for (i=0; i<setSize; i++) {
     	struct pulse_s * p = &pulseSet[i];
-    	
+
  	    int delta = gNow - p->startTime;
-    		        
+
     	if (p->active != 0 && delta >= 0) {
-                
+
 	        float x = p->originX + (p->dx * SPEED * delta);
 	        float y = p->originY + (p->dy * SPEED * delta);
-	         
+
 	        matrixLoadIdentity(matrix);
 	        if (p->dx < 0) {
 	            vpLoadTextureMatrix(matrix);
@@ -150,12 +150,12 @@ void drawPulses(struct pulse_s * pulseSet, int setSize) {
 	                initPulse(p, p->pulseType);
 	            } else {
 	                setColor(p->color);
-	                bindTexture(NAMED_PFTexture, 0, NAMED_TPulse);            
+	                bindTexture(NAMED_PFTexture, 0, NAMED_TPulse);
 	                drawRect(x, y, xx, y + PULSE_SIZE, 0.0f);
 	                bindTexture(NAMED_PFTexture, 0, NAMED_TGlow);
 	                drawRect(x + HALF_PULSE_SIZE - HALF_GLOW_SIZE,
 	                    y + HALF_PULSE_SIZE - HALF_GLOW_SIZE,
-	                    x + HALF_PULSE_SIZE + HALF_GLOW_SIZE, 
+	                    x + HALF_PULSE_SIZE + HALF_GLOW_SIZE,
 	                    y + HALF_PULSE_SIZE + HALF_GLOW_SIZE,
 	                    0.0f);
 	            }
@@ -168,12 +168,12 @@ void drawPulses(struct pulse_s * pulseSet, int setSize) {
 	               initPulse(p, p->pulseType);
 	            } else {
 	                setColor(p->color);
-	                bindTexture(NAMED_PFTexture, 0, NAMED_TPulse);          
+	                bindTexture(NAMED_PFTexture, 0, NAMED_TPulse);
 	                drawRect(xx, y, x, y + PULSE_SIZE, 0.0f);
 	                bindTexture(NAMED_PFTexture, 0, NAMED_TGlow);
 	                drawRect(x - HALF_PULSE_SIZE - HALF_GLOW_SIZE,
 	                    y + HALF_PULSE_SIZE - HALF_GLOW_SIZE,
-	                    x - HALF_PULSE_SIZE + HALF_GLOW_SIZE, 
+	                    x - HALF_PULSE_SIZE + HALF_GLOW_SIZE,
 	                    y + HALF_PULSE_SIZE + HALF_GLOW_SIZE,
 	                    0.0f);
 	            }
@@ -190,7 +190,7 @@ void drawPulses(struct pulse_s * pulseSet, int setSize) {
 	                bindTexture(NAMED_PFTexture, 0, NAMED_TGlow);
 	                drawRect(x + HALF_PULSE_SIZE - HALF_GLOW_SIZE,
 	                    y + HALF_PULSE_SIZE - HALF_GLOW_SIZE,
-	                    x + HALF_PULSE_SIZE + HALF_GLOW_SIZE, 
+	                    x + HALF_PULSE_SIZE + HALF_GLOW_SIZE,
 	                    y + HALF_PULSE_SIZE + HALF_GLOW_SIZE,
 	                    0.0f);
 	            }
@@ -208,15 +208,15 @@ void drawPulses(struct pulse_s * pulseSet, int setSize) {
 	                bindTexture(NAMED_PFTexture, 0, NAMED_TGlow);
 	                drawRect(x + HALF_PULSE_SIZE - HALF_GLOW_SIZE,
 	                    y - HALF_PULSE_SIZE - HALF_GLOW_SIZE,
-	                    x + HALF_PULSE_SIZE + HALF_GLOW_SIZE, 
+	                    x + HALF_PULSE_SIZE + HALF_GLOW_SIZE,
 	                    y - HALF_PULSE_SIZE + HALF_GLOW_SIZE,
 	                    0.0f);
 	            }
 	        }
 	    }
     }
-    
-    
+
+
     matrixLoadIdentity(matrix);
     vpLoadTextureMatrix(matrix);
 }
@@ -226,14 +226,14 @@ void addTap(int x, int y) {
     int count = 0;
     int color = (int)randf(4.0f);
     x = (int)(x / PULSE_SIZE) * PULSE_SIZE;
-    y = (int)(y / PULSE_SIZE) * PULSE_SIZE;   
+    y = (int)(y / PULSE_SIZE) * PULSE_SIZE;
     for (i=0; i<MAX_EXTRAS; i++) {
     	struct pulse_s * p = &gExtras[i];
     	if (p->active == 0) {
             p->originX = x;
             p->originY = y;
-            
-            if (count == 0) { 
+
+            if (count == 0) {
                 p->dx = 1.5f;
                 p->dy = 0.0f;
             } else if (count == 1) {
@@ -246,7 +246,7 @@ void addTap(int x, int y) {
                 p->dx = 0.0f;
                 p->dy = -1.5f;
             }
-            
+
             p->active = 1;
             p->color = color;
             color++;
@@ -265,17 +265,17 @@ void addTap(int x, int y) {
 int main(int index) {
 
     gNow = uptimeMillis();
-    
+
     if (Command->command != 0) {
         debugF("x", Command->x);
         debugF("y", Command->y);
         Command->command = 0;
         addTap(Command->x, Command->y);
     }
-    
+
     int width = State->width;
     int height = State->height;
-    
+
     float matrix[16];
     matrixLoadIdentity(matrix);
     if (State->rotate) {
@@ -284,13 +284,13 @@ int main(int index) {
     } else {
          matrixTranslate(matrix, -(State->xOffset * width), 0, 0);
     }
-    
+
     vpLoadModelMatrix(matrix);
-        
+
     drawBackground(width, height);
 
     drawPulses(gPulses, MAX_PULSES);
     drawPulses(gExtras, MAX_EXTRAS);
-	    
-    return 1;
+
+    return 45;
 }

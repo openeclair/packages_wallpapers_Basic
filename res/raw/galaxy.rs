@@ -197,5 +197,5 @@ int main(int index) {
     drawParticles(x, offset, width, height);
     drawLights(x, width, height);
 
-    return 1;
+    return 45;
 }
