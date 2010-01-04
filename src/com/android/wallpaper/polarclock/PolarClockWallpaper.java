@@ -68,6 +68,7 @@ public class PolarClockWallpaper extends WallpaperService {
 
         public abstract int getBackgroundColor();
 
+        // forAngle should be on [0.0,1.0) but 1.0 must be tolerated
         public abstract int getSecondColor(float forAngle);
 
         public abstract int getMinuteColor(float forAngle);
@@ -224,26 +225,31 @@ public class PolarClockWallpaper extends WallpaperService {
 
         @Override
         public int getSecondColor(float forAngle) {
+            if (forAngle >= 1.0f || forAngle < 0.0f) forAngle = 0.0f;
             return mColors[((int) (forAngle * COLORS_CACHE_COUNT))];
         }
 
         @Override
         public int getMinuteColor(float forAngle) {
+            if (forAngle >= 1.0f || forAngle < 0.0f) forAngle = 0.0f;
             return mColors[((int) (forAngle * COLORS_CACHE_COUNT))];
         }
 
         @Override
         public int getHourColor(float forAngle) {
+            if (forAngle >= 1.0f || forAngle < 0.0f) forAngle = 0.0f;
             return mColors[((int) (forAngle * COLORS_CACHE_COUNT))];
         }
 
         @Override
         public int getDayColor(float forAngle) {
+            if (forAngle >= 1.0f || forAngle < 0.0f) forAngle = 0.0f;
             return mColors[((int) (forAngle * COLORS_CACHE_COUNT))];
         }
 
         @Override
         public int getMonthColor(float forAngle) {
+            if (forAngle >= 1.0f || forAngle < 0.0f) forAngle = 0.0f;
             return mColors[((int) (forAngle * COLORS_CACHE_COUNT))];
         }
 
@@ -292,7 +298,6 @@ public class PolarClockWallpaper extends WallpaperService {
         private boolean mVariableLineWidth;
 
         private boolean mWatcherRegistered;
-        private float mStartTime;
         private Time mCalendar;
 
         private final Paint mPaint = new Paint();
@@ -353,7 +358,6 @@ public class PolarClockWallpaper extends WallpaperService {
 
             mCalendar = new Time();
             mCalendar.setToNow();
-            mStartTime = mCalendar.second * 1000.0f;
 
             final Paint paint = mPaint;
             paint.setAntiAlias(true);
@@ -415,7 +419,6 @@ public class PolarClockWallpaper extends WallpaperService {
                 }
                 mCalendar = new Time();
                 mCalendar.setToNow();
-                mStartTime = mCalendar.second * 1000.0f;                
             } else {
                 if (mWatcherRegistered) {
                     mWatcherRegistered = false;
@@ -469,7 +472,8 @@ public class PolarClockWallpaper extends WallpaperService {
                     final Time calendar = mCalendar;
                     final Paint paint = mPaint;
 
-                    calendar.setToNow();
+                    final long millis = System.currentTimeMillis();
+                    calendar.set(millis);
                     calendar.normalize(false);
 
                     int s = width / 2;
@@ -492,9 +496,8 @@ public class PolarClockWallpaper extends WallpaperService {
 
                     if (mShowSeconds) {
                         // Draw seconds  
-                        angle = ((mStartTime + SystemClock.elapsedRealtime()) % 60000) / 60000.0f;
-                        if (angle < 0) angle = -angle;
-
+                        angle = (float) (millis % 60000) / 60000.0f;
+                        //Log.d("PolarClock", "millis=" + millis + ", angle=" + angle);
                         paint.setColor(mPalette.getSecondColor(angle));
 
                         if (mVariableLineWidth) {
@@ -548,7 +551,7 @@ public class PolarClockWallpaper extends WallpaperService {
                     size -= (SMALL_GAP + lastRingThickness);
                     rect.set(-size, -size, size, size);
 
-                    angle = (calendar.month - 1) / 11.0f;
+                    angle = (calendar.month) / 11.0f; // NB: month is already on [0..11]
 
                     paint.setColor(mPalette.getMonthColor(angle));
 
