@@ -208,7 +208,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
 
     private void loadTextures() {
         int resource = R.drawable.pyramid_background;
-        if (mBackground.equals("dark") resource = R.drawable.dark_pyramid_background;
+        if (mBackground.equals("dark")) resource = R.drawable.dark_pyramid_background;
         mTextures[0] = loadTexture(resource, "TBackground");
         mTextures[1] = loadTextureARGB(R.drawable.pulse, "TPulse");
         mTextures[2] = loadTextureARGB(R.drawable.glow, "TGlow");
