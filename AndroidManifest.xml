@@ -66,6 +66,13 @@
 
         </activity>
         
+        <activity
+            android:label="Settings"
+            android:name="com.android.wallpaper.nexus.NexusSettings"
+            android:theme="@android:style/Theme"
+            android:exported="true">
+        </activity>
+
         <service
             android:label="@string/wallpaper_nexus"
             android:name="com.android.wallpaper.nexus.NexusWallpaper"
@@ -76,27 +83,6 @@
             <meta-data android:name="android.service.wallpaper" android:resource="@xml/nexus" />
         </service>
 
-        <service
-            android:label="@string/wallpaper_darknexus"
-            android:name="com.android.wallpaper.nexus.DarkNexusWallpaper"
-            android:permission="android.permission.BIND_WALLPAPER">
-            <intent-filter>
-                <action android:name="android.service.wallpaper.WallpaperService" />
-            </intent-filter>
-            <meta-data android:name="android.service.wallpaper" android:resource="@xml/darknexus" />
-        </service>
-
-        <service
-            android:label="@string/wallpaper_sexynexus"
-            android:name="com.android.wallpaper.nexus.SexyNexusWallpaper"
-            android:permission="android.permission.BIND_WALLPAPER">
-            <intent-filter>
-                <action android:name="android.service.wallpaper.WallpaperService" />
-            </intent-filter>
-            <meta-data android:name="android.service.wallpaper" android:resource="@xml/sexynexus" />
-        </service>
-
-        
         <service
             android:label="@string/wallpaper_grass"
             android:name="com.android.wallpaper.grass.GrassWallpaper"

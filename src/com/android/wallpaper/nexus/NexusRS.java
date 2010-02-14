@@ -27,6 +27,9 @@ import static android.renderscript.Sampler.Value.WRAP;
 import com.android.wallpaper.R;
 import com.android.wallpaper.RenderScriptScene;
 
+import android.util.Log;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
@@ -45,7 +48,7 @@ import android.view.SurfaceHolder;
 
 import java.util.TimeZone;
 
-class NexusRS extends RenderScriptScene {
+class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPreferenceChangeListener {
 
     private static final int RSID_STATE = 0;
 
@@ -54,6 +57,14 @@ class NexusRS extends RenderScriptScene {
     private static final int TEXTURES_COUNT = 3;
 
     private final BitmapFactory.Options mOptionsARGB = new BitmapFactory.Options();
+
+    private String mColorScheme;
+
+    private String mBackground;
+
+    private Context mContext;
+
+    private SharedPreferences mPrefs;
 
     private ProgramFragment mPfTexture;
 
@@ -83,9 +94,15 @@ class NexusRS extends RenderScriptScene {
 
     private Allocation[] mTextures = new Allocation[TEXTURES_COUNT];
 
-    public NexusRS(int width, int height) {
+    public NexusRS(Context context, int width, int height) {
         super(width, height);
 
+        mContext = context;
+        mPrefs = mContext.getSharedPreferences(NexusWallpaper.SHARED_PREFS_NAME, 0);
+        mPrefs.registerOnSharedPreferenceChangeListener(this);
+
+        mColorScheme = mPrefs.getString("colorScheme","normal");
+        mBackground = mPrefs.getString("background","normal");
         mOptionsARGB.inScaled = false;
         mOptionsARGB.inPreferredConfig = Bitmap.Config.ARGB_8888;
     }
@@ -124,7 +141,19 @@ class NexusRS extends RenderScriptScene {
         ScriptC.Builder sb = new ScriptC.Builder(mRS);
         sb.setType(mStateType, "State", RSID_STATE);
         sb.setType(mCommandType, "Command", RSID_COMMAND);
-        sb.setScript(mResources, R.raw.nexus);
+
+        Log.i("NexusLWP-createScript", "mColorScheme: '" + mColorScheme+"'");
+
+        int resource = R.raw.nexus;
+        if (mColorScheme.equals("sexy")) {
+            Log.i("NexusLWP-createScript", "Loading colorScheme: sexy");
+            resource = R.raw.sexynexus;
+        } else {
+            Log.i("NexusLWP-createScript", "Loading colorScheme: normal");
+            resource = R.raw.nexus;
+        }
+        sb.setScript(mResources, resource);
+
         Script.Invokable invokable = sb.addInvokable("initPulses");
         sb.setRoot(true);
 
@@ -178,7 +207,9 @@ class NexusRS extends RenderScriptScene {
     }
 
     private void loadTextures() {
-        mTextures[0] = loadTexture(R.drawable.pyramid_background, "TBackground");
+        int resource = R.drawable.pyramid_background;
+        if (mBackground.equals("dark") resource = R.drawable.dark_pyramid_background;
+        mTextures[0] = loadTexture(resource, "TBackground");
         mTextures[1] = loadTextureARGB(R.drawable.pulse, "TPulse");
         mTextures[2] = loadTextureARGB(R.drawable.glow, "TGlow");
 
@@ -277,5 +308,22 @@ class NexusRS extends RenderScriptScene {
         mCommand.y = y;
         mCommand.command = command;
         mCommandAllocation.data(mCommand);
+    }
+
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
+           String key) {
+
+        boolean changed = false;
+        if (key == null || key.equals("colorScheme")) {
+             mColorScheme = sharedPreferences.getString("colorScheme", "normal");
+            changed = true;
+        }
+        if (key == null || key.equals("background")) {
+            mBackground = sharedPreferences.getString("background", "normal");
+            changed = true;
+        }
+        if (changed) {
+            createScript();
+        }
     }
 }

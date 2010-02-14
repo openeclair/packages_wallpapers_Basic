@@ -20,7 +20,8 @@ import com.android.wallpaper.RenderScriptWallpaper;
 import com.android.wallpaper.RenderScriptScene;
 
 public class NexusWallpaper extends RenderScriptWallpaper {
+    static final String SHARED_PREFS_NAME = "nexus_settings";
     protected RenderScriptScene createScene(int width, int height) {
-        return new NexusRS(width, height);
+        return new NexusRS(this, width, height);
     }
 }
