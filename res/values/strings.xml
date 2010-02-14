@@ -70,6 +70,13 @@
     <string name="wallpaper_nexus_desc">
         A peek inside the neural network.
     </string>
+
+        <!-- Wallpaper showing nexus -->
+    <string name="wallpaper_darknexus">DarkNexus</string>
+    <string name="wallpaper_darknexus_author">Chris Soyars</string>
+    <string name="wallpaper_darknexus_desc">
+        A peek inside the dark neural network.
+    </string>
     
     <!-- Polar clock: title of settings activity -->
     <string name="clock_settings">Polar clock settings</string>
