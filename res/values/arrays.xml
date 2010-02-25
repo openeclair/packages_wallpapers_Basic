@@ -42,12 +42,10 @@
   <string-array name="nexus_colorscheme_names" translatable="false">
     <item>Normal</item>
     <item>Sexy</item>
-    <item>c0z</item>
   </string-array>
   <string-array name="nexus_colorscheme_ids" translatable="false">
     <item>normal</item>
     <item>sexy</item>
-    <item>c0z</item>
   </string-array>
 
   <string-array name="nexus_background_names" translatable="false">
