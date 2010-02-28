@@ -25,7 +25,6 @@ import android.service.wallpaper.WallpaperSettingsActivity;
 public class NexusSettings extends WallpaperSettingsActivity
     implements SharedPreferences.OnSharedPreferenceChangeListener {
 
-    @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
         getPreferenceManager().setSharedPreferencesName(
@@ -35,12 +34,10 @@ public class NexusSettings extends WallpaperSettingsActivity
                 this);
     }
 
-    @Override
     protected void onResume() {
         super.onResume();
     }
 
-    @Override
     protected void onDestroy() {
         getPreferenceManager().getSharedPreferences().unregisterOnSharedPreferenceChangeListener(
                 this);
