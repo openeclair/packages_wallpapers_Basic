@@ -32,7 +32,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Rect;
 import android.os.Bundle;
 import android.renderscript.Allocation;
 import android.renderscript.ProgramFragment;
@@ -44,8 +43,6 @@ import android.renderscript.ScriptC;
 import android.renderscript.Type;
 import android.renderscript.ProgramStore.BlendDstFunc;
 import android.renderscript.ProgramStore.BlendSrcFunc;
-import android.view.SurfaceHolder;
-
 import java.util.TimeZone;
 
 class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPreferenceChangeListener {
@@ -314,11 +311,11 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
            String key) {
 
         boolean changed = false;
-        if (key == null || key.equals("colorScheme")) {
+        if (key.equals("colorScheme")) {
              mColorScheme = sharedPreferences.getString("colorScheme", "normal");
             changed = true;
         }
-        if (key == null || key.equals("background")) {
+        if (key.equals("background")) {
             mBackground = sharedPreferences.getString("background", "normal");
             changed = true;
         }

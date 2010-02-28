@@ -22,30 +22,20 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.service.wallpaper.WallpaperSettingsActivity;
 
-public class NexusSettings extends WallpaperSettingsActivity
-    implements SharedPreferences.OnSharedPreferenceChangeListener {
+public class NexusSettings extends WallpaperSettingsActivity {
 
-    protected void onCreate(Bundle icicle) {
-        super.onCreate(icicle);
-        getPreferenceManager().setSharedPreferencesName(
-                NexusWallpaper.SHARED_PREFS_NAME);
-        addPreferencesFromResource(R.xml.nexus_prefs);
-        getPreferenceManager().getSharedPreferences().registerOnSharedPreferenceChangeListener(
-                this);
-    }
+	protected void onCreate(Bundle icicle) {
+		super.onCreate(icicle);
+		getPreferenceManager().setSharedPreferencesName(
+				NexusWallpaper.SHARED_PREFS_NAME);
+		addPreferencesFromResource(R.xml.nexus_prefs);
+	}
 
-    protected void onResume() {
-        super.onResume();
-    }
+	protected void onResume() {
+		super.onResume();
+	}
 
-    protected void onDestroy() {
-        getPreferenceManager().getSharedPreferences().unregisterOnSharedPreferenceChangeListener(
-                this);
-        super.onDestroy();
-    }
-
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
-            String key) {
-        //(new BackupManager(this)).dataChanged();
-    }
+	protected void onDestroy() {
+		super.onDestroy();
+	}
 }
