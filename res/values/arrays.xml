@@ -38,4 +38,25 @@
     <item>palette_oceanic</item>
     <item>palette_zenburn</item>
   </string-array>
+
+  <string-array name="nexus_colorscheme_names" translatable="false">
+    <item>Normal</item>
+    <item>Sexy</item>
+    <item>CyanogenMod</item>
+  </string-array>
+  <string-array name="nexus_colorscheme_ids" translatable="false">
+    <item>normal</item>
+    <item>sexy</item>
+    <item>cyanogenmod</item>
+  </string-array>
+
+  <string-array name="nexus_background_names" translatable="false">
+    <item>Normal</item>
+    <item>Dark</item>
+  </string-array>
+  <string-array name="nexus_background_ids" translatable="false">
+    <item>normal</item>
+    <item>dark</item>
+  </string-array>
+
 </resources>
