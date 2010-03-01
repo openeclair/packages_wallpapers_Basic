@@ -43,6 +43,8 @@ import android.renderscript.ScriptC;
 import android.renderscript.Type;
 import android.renderscript.ProgramStore.BlendDstFunc;
 import android.renderscript.ProgramStore.BlendSrcFunc;
+
+import java.awt.Color;
 import java.util.TimeZone;
 
 class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPreferenceChangeListener {
@@ -111,50 +113,60 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
 
     static class Preset {
         /**
-         * @param color0r
-         * @param color0g
-         * @param color0b
-         * @param color1r
-         * @param color1g
-         * @param color1b
-         * @param color2r
-         * @param color2g
-         * @param color2b
-         * @param color3r
-         * @param color3g
-         * @param color3b
+         * @param String[] values: String array of HEX color values (ex: "#FFFFFF").
          */
-        public Preset(float color0r, float color0g, float color0b, float color1r, float color1g,
-                float color1b, float color2r, float color2g, float color2b, float color3r,
-                float color3g, float color3b) {
-            super();
-            this.color0r = color0r;
-            this.color0g = color0g;
-            this.color0b = color0b;
-            this.color1r = color1r;
-            this.color1g = color1g;
-            this.color1b = color1b;
-            this.color2r = color2r;
-            this.color2g = color2g;
-            this.color2b = color2b;
-            this.color3r = color3r;
-            this.color3g = color3g;
-            this.color3b = color3b;
-        }
+    	public Preset(String[] values) {
+    		super();
 
-        public float color0r, color0g, color0b;
-        public float color1r, color1g, color1b;
-        public float color2r, color2g, color2b;
-        public float color3r, color3g, color3b;
+    		Color color0  = Color.decode(values[0]);
+    		this.color0r = (color0.getRed()/255);
+    		this.color0g = (color0.getGreen()/255);
+    		this.color0b= (color0.getBlue()/255);
+    		
+    		Color color1  = Color.decode(values[1]);
+    		this.color1r = (color1.getRed()/255);
+    		this.color1g = (color1.getGreen()/255);
+    		this.color1b= (color1.getBlue()/255);
+    		
+    		Color color2  = Color.decode(values[2]);
+    		this.color2r = (color2.getRed()/255);
+    		this.color2g = (color2.getGreen()/255);
+    		this.color2b= (color2.getBlue()/255);
+    		
+    		Color color3  = Color.decode(values[3]);
+    		this.color3r = (color3.getRed()/255);
+    		this.color3g = (color3.getGreen()/255);
+    		this.color3b= (color3.getBlue()/255);
+    	}
+
+    	public float color0r, color0g, color0b;
+    	public float color1r, color1g, color1b;
+    	public float color2r, color2g, color2b;
+    	public float color3r, color3g, color3b;
     }
-    
+
     public static final Preset [] mPreset = new Preset[] {
         // normal
-        new Preset(1.0f, 0.0f, 0.0f, 0.0f, 0.6f, 0.0f, 0.0f, 0.4f, 0.8f, 1.0f, 0.8f, 0.0f),
+    	new Preset(new String[] {
+    			"#FF0000", //red
+    			"#009900", //green
+    			"#0066CC", //blue
+    			"#FFCC00" //yellow
+    	}),
         // sexynexus
-        new Preset(0.333333333f, 0.101960784f, 0.545098039f, 1.0f, 0.0f, 0.0f, 1.0f, 0.31764059f, 0.8f, 0.674509804f, 0.819607843f, 0.91372549f),
+    	new Preset(new String[] {
+    			"#551A8B", //purple
+    			"#FF0000", //red
+    			"#FF51CC", // pink
+    			"#ACD1E8" // baby blue
+    	}),
         // cyanogen
-        new Preset(0.086274f, 0.9398039f, 0.9450980f, 0.086274f, 0.9398039f, 0.9450980f, 0.086274f, 0.9398039f, 0.9450980f, 0.086274f, 0.9398039f, 0.9450980f)
+    	new Preset(new String[]{
+    			"#16F0F1",
+    			"#16F0F1",
+    			"#16F0F1",
+    			"#16F0F1"
+    	}),
     };
     
     @Override
