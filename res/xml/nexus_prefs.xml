@@ -15,7 +15,7 @@
 -->
 
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-        android:title="@string/clock_settings"
+        android:title="@string/nexus_settings"
         android:key="nexus_settings">
 
     <ListPreference

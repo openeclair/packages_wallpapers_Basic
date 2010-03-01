@@ -85,6 +85,8 @@
         A peek inside the neural network (for the ladies).
     </string>
     
+    <string name="nexus_settings">Nexus wallpaper settings</string>
+
     <!-- Polar clock: title of settings activity -->
     <string name="clock_settings">Polar clock settings</string>
     <!-- Polar clock: label for "show seconds" pref -->

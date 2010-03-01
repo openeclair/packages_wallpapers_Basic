@@ -55,7 +55,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
 
     private final BitmapFactory.Options mOptionsARGB = new BitmapFactory.Options();
 
-    private String mColorScheme;
+    private int mCurrentPreset = 0;
 
     private String mBackground;
 
@@ -90,7 +90,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
     private CommandState mCommand;
 
     private Allocation[] mTextures = new Allocation[TEXTURES_COUNT];
-
+        
     public NexusRS(Context context, int width, int height) {
         super(width, height);
 
@@ -98,12 +98,65 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         mPrefs = mContext.getSharedPreferences(NexusWallpaper.SHARED_PREFS_NAME, 0);
         mPrefs.registerOnSharedPreferenceChangeListener(this);
 
-        mColorScheme = mPrefs.getString("colorScheme","normal");
+        try {
+            mCurrentPreset = Integer.valueOf(mPrefs.getString("colorScheme", "0"));
+        } catch (NumberFormatException e) {
+            mCurrentPreset = 0;
+        }
+        
         mBackground = mPrefs.getString("background","normal");
         mOptionsARGB.inScaled = false;
         mOptionsARGB.inPreferredConfig = Bitmap.Config.ARGB_8888;
     }
 
+    static class Preset {
+        /**
+         * @param color0r
+         * @param color0g
+         * @param color0b
+         * @param color1r
+         * @param color1g
+         * @param color1b
+         * @param color2r
+         * @param color2g
+         * @param color2b
+         * @param color3r
+         * @param color3g
+         * @param color3b
+         */
+        public Preset(float color0r, float color0g, float color0b, float color1r, float color1g,
+                float color1b, float color2r, float color2g, float color2b, float color3r,
+                float color3g, float color3b) {
+            super();
+            this.color0r = color0r;
+            this.color0g = color0g;
+            this.color0b = color0b;
+            this.color1r = color1r;
+            this.color1g = color1g;
+            this.color1b = color1b;
+            this.color2r = color2r;
+            this.color2g = color2g;
+            this.color2b = color2b;
+            this.color3r = color3r;
+            this.color3g = color3g;
+            this.color3b = color3b;
+        }
+
+        public float color0r, color0g, color0b;
+        public float color1r, color1g, color1b;
+        public float color2r, color2g, color2b;
+        public float color3r, color3g, color3b;
+    }
+    
+    public static final Preset [] mPreset = new Preset[] {
+        // normal
+        new Preset(1.0f, 0.0f, 0.0f, 0.0f, 0.6f, 0.0f, 0.0f, 0.4f, 0.8f, 1.0f, 0.8f, 0.0f),
+        // sexynexus
+        new Preset(0.333333333f, 0.101960784f, 0.545098039f, 1.0f, 0.0f, 0.0f, 1.0f, 0.31764059f, 0.8f, 0.674509804f, 0.819607843f, 0.91372549f),
+        // cyanogen
+        new Preset(0.086274f, 0.9398039f, 0.9450980f, 0.086274f, 0.9398039f, 0.9450980f, 0.086274f, 0.9398039f, 0.9450980f, 0.086274f, 0.9398039f, 0.9450980f)
+    };
+    
     @Override
     public void setOffset(float xOffset, float yOffset, int xPixels, int yPixels) {
         mWorldState.xOffset = xOffset;
@@ -139,17 +192,9 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         sb.setType(mStateType, "State", RSID_STATE);
         sb.setType(mCommandType, "Command", RSID_COMMAND);
 
-        Log.i("NexusLWP-createScript", "mColorScheme: '" + mColorScheme+"'");
+        Log.i("NexusLWP-createScript", "mColorScheme: '" + mCurrentPreset+"'");
 
-        int resource = R.raw.nexus;
-        if (mColorScheme.equals("sexy")) {
-            resource = R.raw.sexynexus;
-        } else if (mColorScheme.equals("cyanogenmod")) {
-            resource = R.raw.cyanogenmod;
-        } else {
-            resource = R.raw.nexus;
-        }
-        sb.setScript(mResources, resource);
+        sb.setScript(mResources, R.raw.nexus);
 
         Script.Invokable invokable = sb.addInvokable("initPulses");
         sb.setRoot(true);
@@ -174,6 +219,10 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         public int rotate;
         public int isPreview;
         public float xOffset;
+        public float color0r, color0g, color0b;
+        public float color1r, color1g, color1b;
+        public float color2r, color2g, color2b;
+        public float color3r, color3g, color3b;
     }
 
     static class CommandState {
@@ -182,13 +231,29 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         public int command;
     }
 
-    private void createState() {
-        mWorldState = new WorldState();
+    private void makeNewState() {
         mWorldState.width = mWidth;
         mWorldState.height = mHeight;
         mWorldState.rotate = mWidth > mHeight ? 1 : 0;
         mWorldState.isPreview = isPreview() ? 1 : 0;
-
+        mWorldState.color0r = mPreset[mCurrentPreset].color0r;
+        mWorldState.color0g = mPreset[mCurrentPreset].color0g;
+        mWorldState.color0b = mPreset[mCurrentPreset].color0b;
+        mWorldState.color1r = mPreset[mCurrentPreset].color1r;
+        mWorldState.color1g = mPreset[mCurrentPreset].color1g;
+        mWorldState.color1b = mPreset[mCurrentPreset].color1b;
+        mWorldState.color2r = mPreset[mCurrentPreset].color2r;
+        mWorldState.color2g = mPreset[mCurrentPreset].color2g;
+        mWorldState.color2b = mPreset[mCurrentPreset].color2b;
+        mWorldState.color3r = mPreset[mCurrentPreset].color3r;
+        mWorldState.color3g = mPreset[mCurrentPreset].color3g;
+        mWorldState.color3b = mPreset[mCurrentPreset].color3b;
+    }
+    
+    private void createState() {
+        mWorldState = new WorldState();
+        makeNewState();
+        
         mStateType = Type.createFromClass(mRS, WorldState.class, 1, "WorldState");
         mState = Allocation.createTyped(mRS, mStateType);
         mState.data(mWorldState);
@@ -201,6 +266,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         mCommandType = Type.createFromClass(mRS, CommandState.class, 1, "DropState");
         mCommandAllocation = Allocation.createTyped(mRS, mCommandType);
         mCommandAllocation.data(mCommand);
+        
     }
 
     private void loadTextures() {
@@ -309,18 +375,20 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
 
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
            String key) {
-
-        boolean changed = false;
-        if (key.equals("colorScheme")) {
-             mColorScheme = sharedPreferences.getString("colorScheme", "normal");
-            changed = true;
+        
+        int newPreset = Integer.valueOf(sharedPreferences.getString("colorScheme", "0"));
+        if (newPreset != mCurrentPreset) {
+            mCurrentPreset = newPreset;
+            makeNewState();
+            mState.data(mWorldState);
         }
+        
         if (key.equals("background")) {
             mBackground = sharedPreferences.getString("background", "normal");
-            changed = true;
-        }
-        if (changed) {
-            createScript();
+            int resource = R.drawable.pyramid_background;
+            if (mBackground.equals("dark")) resource = R.drawable.dark_pyramid_background;
+            mTextures[0] = loadTexture(resource, "TBackground");
+            mTextures[0].uploadToTexture(0);
         }
     }
 }
