@@ -110,7 +110,11 @@ void initPulses() {
 }
 
 void drawBackground(int width, int height) {
-    bindTexture(NAMED_PFTexture, 0, NAMED_TBackground);
+    if (State->background == 0) {
+    	bindTexture(NAMED_PFTexture, 0, NAMED_TBackground);
+    } else {
+        bindTexture(NAMED_PFTexture, 0, NAMED_TBackgroundDark);
+    }
     color(1.0f, 1.0f, 1.0f, 1.0f);
     if (State->rotate) {
         drawRect(0.0f, 0.0f, height*2, width, 0.0f);
