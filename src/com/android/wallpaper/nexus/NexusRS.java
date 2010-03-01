@@ -51,7 +51,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
 
     private static final int RSID_COMMAND = 1;
 
-    private static final int TEXTURES_COUNT = 3;
+    private static final int TEXTURES_COUNT = 4;
 
     private final BitmapFactory.Options mOptionsARGB = new BitmapFactory.Options();
 
@@ -207,7 +207,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         script.bindAllocation(mCommandAllocation, RSID_COMMAND);
 
         invokable.execute();
-
+        
         return script;
     }
 
@@ -223,6 +223,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         public float color1r, color1g, color1b;
         public float color2r, color2g, color2b;
         public float color3r, color3g, color3b;
+        public int background = 0;
     }
 
     static class CommandState {
@@ -248,6 +249,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         mWorldState.color3r = mPreset[mCurrentPreset].color3r;
         mWorldState.color3g = mPreset[mCurrentPreset].color3g;
         mWorldState.color3b = mPreset[mCurrentPreset].color3b;
+        mWorldState.background = "dark".equals(mBackground) ? 1 : 0;
     }
     
     private void createState() {
@@ -270,12 +272,11 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
     }
 
     private void loadTextures() {
-        int resource = R.drawable.pyramid_background;
-        if (mBackground.equals("dark")) resource = R.drawable.dark_pyramid_background;
-        mTextures[0] = loadTexture(resource, "TBackground");
+        mTextures[0] = loadTexture(R.drawable.pyramid_background, "TBackground");
         mTextures[1] = loadTextureARGB(R.drawable.pulse, "TPulse");
         mTextures[2] = loadTextureARGB(R.drawable.glow, "TGlow");
-
+        mTextures[3] = loadTexture(R.drawable.dark_pyramid_background, "TBackgroundDark");
+        
         final int count = mTextures.length;
         for (int i = 0; i < count; i++) {
             mTextures[i].uploadToTexture(0);
@@ -379,16 +380,14 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         int newPreset = Integer.valueOf(sharedPreferences.getString("colorScheme", "0"));
         if (newPreset != mCurrentPreset) {
             mCurrentPreset = newPreset;
-            makeNewState();
-            mState.data(mWorldState);
         }
         
         if (key.equals("background")) {
             mBackground = sharedPreferences.getString("background", "normal");
-            int resource = R.drawable.pyramid_background;
-            if (mBackground.equals("dark")) resource = R.drawable.dark_pyramid_background;
-            mTextures[0] = loadTexture(resource, "TBackground");
-            mTextures[0].uploadToTexture(0);
+            mWorldState.background = "dark".equals(mBackground) ? 1 : 0;
         }
+        
+        makeNewState();
+        mState.data(mWorldState);
     }
 }
