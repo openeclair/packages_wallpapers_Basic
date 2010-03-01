@@ -44,7 +44,6 @@ import android.renderscript.Type;
 import android.renderscript.ProgramStore.BlendDstFunc;
 import android.renderscript.ProgramStore.BlendSrcFunc;
 
-import java.awt.Color;
 import java.util.TimeZone;
 
 class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPreferenceChangeListener {
@@ -117,26 +116,26 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
          */
     	public Preset(String[] values) {
     		super();
-
-    		Color color0  = Color.decode(values[0]);
-    		this.color0r = (color0.getRed()/255);
-    		this.color0g = (color0.getGreen()/255);
-    		this.color0b= (color0.getBlue()/255);
     		
-    		Color color1  = Color.decode(values[1]);
-    		this.color1r = (color1.getRed()/255);
-    		this.color1g = (color1.getGreen()/255);
-    		this.color1b= (color1.getBlue()/255);
+    		int color0 = Integer.decode(values[0]).intValue();
+    		this.color0r = ( (color0 >> 16) & 0xFF) / 255.0f;
+    		this.color0g = ( (color0 >> 8) & 0xFF ) / 255.0f;
+    		this.color0b = ( color0 & 0xFF ) / 255.0f;
     		
-    		Color color2  = Color.decode(values[2]);
-    		this.color2r = (color2.getRed()/255);
-    		this.color2g = (color2.getGreen()/255);
-    		this.color2b= (color2.getBlue()/255);
+    		int color1 = Integer.decode(values[1]).intValue();
+    		this.color1r = ( (color1 >> 16) & 0xFF) / 255.0f;
+    		this.color1g = ( (color1 >> 8) & 0xFF ) / 255.0f;
+    		this.color1b = ( color1 & 0xFF ) / 255.0f;
     		
-    		Color color3  = Color.decode(values[3]);
-    		this.color3r = (color3.getRed()/255);
-    		this.color3g = (color3.getGreen()/255);
-    		this.color3b= (color3.getBlue()/255);
+    		int color2 = Integer.decode(values[2]).intValue();
+    		this.color2r = ( (color2 >> 16) & 0xFF) / 255.0f;
+    		this.color2g = ( (color2 >> 8) & 0xFF ) / 255.0f;
+    		this.color2b = ( color2 & 0xFF ) / 255.0f;
+    		
+    		int color3 = Integer.decode(values[3]).intValue();
+    		this.color3r = ( (color3 >> 16) & 0xFF) / 255.0f;
+    		this.color3g = ( (color3 >> 8) & 0xFF ) / 255.0f;
+    		this.color3b = ( color3 & 0xFF ) / 255.0f;
     	}
 
     	public float color0r, color0g, color0b;
