@@ -143,10 +143,10 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
 
         int resource = R.raw.nexus;
         if (mColorScheme.equals("sexy")) {
-            Log.i("NexusLWP-createScript", "Loading colorScheme: sexy");
             resource = R.raw.sexynexus;
+        } else if (mColorScheme.equals("cyanogenmod")) {
+            resource = R.raw.cyanogenmod;
         } else {
-            Log.i("NexusLWP-createScript", "Loading colorScheme: normal");
             resource = R.raw.nexus;
         }
         sb.setScript(mResources, resource);
