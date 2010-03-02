@@ -149,17 +149,9 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
     }
     
     /*
-     * TODO:
-     * I'm sure there is a better way to do this but for now
-     * we would have to evaluate R.array.nexus_colorscheme_X to
-     * the actual integer, and after talking to a friend of mine
-     * that is a very messy thing to do.
+     * Build an array of Presets dynamically from XML.
      * 
-     * If there is a better way to do that, we could simply for-loop
-     * based on the number of entries in R.array.nexus_colorscheme_ids
-     * and would never have to edit this file to add new colorschemes.
-     * 
-     * @author Chris Soyars
+     * @author Chris Soyars / Steve Kondik
      * @return Array of Preset instances.
      */
     public static Preset[] buildColors() {
@@ -266,6 +258,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         mWorldState.color3r = mPreset[mCurrentPreset].color3r;
         mWorldState.color3g = mPreset[mCurrentPreset].color3g;
         mWorldState.color3b = mPreset[mCurrentPreset].color3b;
+        
         mWorldState.background = "dark".equals(mBackground) ? 1 : 0;
     }
     

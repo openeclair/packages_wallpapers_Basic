@@ -43,11 +43,17 @@
     <item>Normal</item>
     <item>Sexy</item>
     <item>CyanogenMod</item>
+    <item>Candy</item>
+    <item>Zion</item>
+    <item>Dust</item>
   </string-array>
   <string-array name="nexus_colorscheme_ids" translatable="false">
     <item>0</item>
     <item>1</item>
     <item>2</item>
+    <item>3</item>
+    <item>4</item>
+    <item>5</item>
   </string-array>
   
   <string-array name="nexus_colorscheme_0" translatable="false">
@@ -70,7 +76,28 @@
   	<item>#16F0F1</item>
   	<item>#16F0F1</item>
   </string-array>
-  
+
+  <string-array name="nexus_colorscheme_3" translatable="false">
+    <item>#471045</item>
+    <item>#BD2056</item>
+    <item>#FFD300</item>
+    <item>#648C02</item>
+  </string-array>
+
+  <string-array name="nexus_colorscheme_4" translatable="false">
+    <item>#CC5D37</item>
+    <item>#FFA750</item>
+    <item>#182629</item>
+    <item>#696832</item>
+  </string-array>
+
+  <string-array name="nexus_colorscheme_5" translatable="false">
+    <item>#232326</item>
+    <item>#2D3737</item>
+    <item>#80735F</item>
+    <item>#B8A07E</item>
+  </string-array>
+
   <string-array name="nexus_background_names" translatable="false">
     <item>Normal</item>
     <item>Dark</item>
