@@ -49,7 +49,28 @@
     <item>1</item>
     <item>2</item>
   </string-array>
-
+  
+  <string-array name="nexus_colorscheme_0" translatable="false">
+  	<item>#FF0000</item>
+  	<item>#009900</item>
+  	<item>#0066CC</item>
+  	<item>#FFCC00</item>
+  </string-array>
+  
+  <string-array name="nexus_colorscheme_1" translatable="false">
+  	<item>#551A8B</item>
+  	<item>#FF0000</item>
+  	<item>#FF51CC</item>
+  	<item>#ACD1E8</item>
+  </string-array>
+  
+  <string-array name="nexus_colorscheme_2" translatable="false">
+  	<item>#16F0F1</item>
+  	<item>#16F0F1</item>
+  	<item>#16F0F1</item>
+  	<item>#16F0F1</item>
+  </string-array>
+  
   <string-array name="nexus_background_names" translatable="false">
     <item>Normal</item>
     <item>Dark</item>

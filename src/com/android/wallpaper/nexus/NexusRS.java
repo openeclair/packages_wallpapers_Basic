@@ -60,7 +60,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
 
     private String mBackground;
 
-    private Context mContext;
+    private static Context mContext;
 
     private SharedPreferences mPrefs;
 
@@ -91,6 +91,8 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
     private CommandState mCommand;
 
     private Allocation[] mTextures = new Allocation[TEXTURES_COUNT];
+    
+    public static Preset[] mPreset;
         
     public NexusRS(Context context, int width, int height) {
         super(width, height);
@@ -98,6 +100,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         mContext = context;
         mPrefs = mContext.getSharedPreferences(NexusWallpaper.SHARED_PREFS_NAME, 0);
         mPrefs.registerOnSharedPreferenceChangeListener(this);
+        mPreset = buildColors();
 
         try {
             mCurrentPreset = Integer.valueOf(mPrefs.getString("colorScheme", "0"));
@@ -143,30 +146,47 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
     	public float color2r, color2g, color2b;
     	public float color3r, color3g, color3b;
     }
-
-    public static final Preset [] mPreset = new Preset[] {
-        // normal
-    	new Preset(new String[] {
-    			"#FF0000", //red
-    			"#009900", //green
-    			"#0066CC", //blue
-    			"#FFCC00" //yellow
-    	}),
-        // sexynexus
-    	new Preset(new String[] {
-    			"#551A8B", //purple
-    			"#FF0000", //red
-    			"#FF51CC", // pink
-    			"#ACD1E8" // baby blue
-    	}),
-        // cyanogen
-    	new Preset(new String[]{
-    			"#16F0F1",
-    			"#16F0F1",
-    			"#16F0F1",
-    			"#16F0F1"
-    	}),
-    };
+    
+    /*
+     * TODO:
+     * I'm sure there is a better way to do this but for now
+     * we would have to evaluate R.array.nexus_colorscheme_X to
+     * the actual integer, and after talking to a friend of mine
+     * that is a very messy thing to do.
+     * 
+     * If there is a better way to do that, we could simply for-loop
+     * based on the number of entries in R.array.nexus_colorscheme_ids
+     * and would never have to edit this file to add new colorschemes.
+     * 
+     * @author Chris Soyars
+     * @return Array of Preset instances.
+     */
+    public static Preset[] buildColors() {
+    	String[] scheme0 = mContext.getResources().getStringArray(R.array.nexus_colorscheme_0);
+    	String[] scheme1 = mContext.getResources().getStringArray(R.array.nexus_colorscheme_1);
+    	String[] scheme2 = mContext.getResources().getStringArray(R.array.nexus_colorscheme_2);
+    	Preset[] preset = {
+    		new Preset(new String[] { 
+    				scheme0[0],
+    				scheme0[1],
+    				scheme0[2],
+    				scheme0[3],
+    		}),
+    		new Preset(new String[] { 
+    				scheme1[0],
+    				scheme1[1],
+    				scheme1[2],
+    				scheme1[3],
+    		}),	
+    		new Preset(new String[] { 
+    				scheme2[0],
+    				scheme2[1],
+    				scheme2[2],
+    				scheme2[3],
+    		}),
+    	};
+    	return preset;
+    }
     
     @Override
     public void setOffset(float xOffset, float yOffset, int xPixels, int yPixels) {
