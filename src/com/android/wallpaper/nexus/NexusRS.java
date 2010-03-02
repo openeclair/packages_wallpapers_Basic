@@ -30,6 +30,7 @@ import com.android.wallpaper.RenderScriptScene;
 import android.util.Log;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
@@ -162,29 +163,14 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
      * @return Array of Preset instances.
      */
     public static Preset[] buildColors() {
-    	String[] scheme0 = mContext.getResources().getStringArray(R.array.nexus_colorscheme_0);
-    	String[] scheme1 = mContext.getResources().getStringArray(R.array.nexus_colorscheme_1);
-    	String[] scheme2 = mContext.getResources().getStringArray(R.array.nexus_colorscheme_2);
-    	Preset[] preset = {
-    		new Preset(new String[] { 
-    				scheme0[0],
-    				scheme0[1],
-    				scheme0[2],
-    				scheme0[3],
-    		}),
-    		new Preset(new String[] { 
-    				scheme1[0],
-    				scheme1[1],
-    				scheme1[2],
-    				scheme1[3],
-    		}),	
-    		new Preset(new String[] { 
-    				scheme2[0],
-    				scheme2[1],
-    				scheme2[2],
-    				scheme2[3],
-    		}),
-    	};
+        
+        final Resources res = mContext.getResources();
+        final String[] presetIds = res.getStringArray(R.array.nexus_colorscheme_ids);
+        final Preset[] preset = new Preset[presetIds.length];
+        for (String presetId : presetIds) {
+            preset[Integer.valueOf(presetId)] = new Preset(res.getStringArray(res.getIdentifier(
+                    "nexus_colorscheme_" + presetId, "array", "com.android.wallpaper")));
+    	}
     	return preset;
     }
     
