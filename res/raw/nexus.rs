@@ -19,12 +19,12 @@
 
 #define MAX_PULSES           20
 #define MAX_EXTRAS           40
-#define PULSE_SIZE           14 // Size in pixels of a cell
-#define HALF_PULSE_SIZE      7
-#define GLOW_SIZE            64 // Size of the leading glow in pixels
-#define HALF_GLOW_SIZE       32
-#define SPEED                0.2f // (200 / 1000) Pixels per ms
-#define SPEED_VARIANCE       0.3f
+#define PULSE_SIZE           8 // Size in pixels of a cell
+#define HALF_PULSE_SIZE      4
+#define GLOW_SIZE            32 // Size of the leading glow in pixels
+#define HALF_GLOW_SIZE       16
+#define SPEED                0.1f // (200 / 1000) Pixels per ms
+#define SPEED_VARIANCE       0.15f
 #define PULSE_NORMAL         0
 #define PULSE_EXTRA          1
 #define TRAIL_SIZE           40 // Number of cells in a trail
