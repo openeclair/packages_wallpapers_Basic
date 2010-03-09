@@ -78,13 +78,6 @@
         A peek inside the dark neural network.
     </string>
 
-        <!-- Wallpaper showing nexus -->
-    <string name="wallpaper_sexynexus">SexyNexus</string>
-    <string name="wallpaper_sexynexus_author">Chris Soyars</string>
-    <string name="wallpaper_sexynexus_desc">
-        A peek inside the neural network (for the ladies).
-    </string>
-    
     <string name="nexus_settings">Nexus wallpaper settings</string>
 
     <!-- Polar clock: title of settings activity -->
