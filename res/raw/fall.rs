@@ -19,7 +19,7 @@
 
 #define LEAVES_TEXTURES_COUNT 8
 #define LEAF_SIZE 0.55f
-#define LEAVES_COUNT 14
+#define LEAVES_COUNT 9
 
 float skyOffsetX;
 float skyOffsetY;
