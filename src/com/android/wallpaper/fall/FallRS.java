@@ -286,29 +286,17 @@ class FallRS extends RenderScriptScene {
     }
     
     private void loadTextures() {
-        final Allocation[] textures = new Allocation[TEXTURES_COUNT];
-        textures[RSID_TEXTURE_RIVERBED] = loadTexture(R.drawable.pond, "TRiverbed");
-        textures[RSID_TEXTURE_LEAVES] = loadTextureARGB(R.drawable.leaves, "TLeaves");
-        // textures[RSID_TEXTURE_SKY] = loadTextureARGB(R.drawable.clouds, "TSky");
-
-        final int count = textures.length;
-        for (int i = 0; i < count; i++) {
-            textures[i].uploadToTexture(0);
-        }
+	loadTexture(R.drawable.pond, "TRiverbed");
+        loadTextureARGB(R.drawable.leaves, "TLeaves");
     }
 
-    private Allocation loadTexture(int id, String name) {
-        final Allocation allocation = Allocation.createFromBitmapResource(mRS, mResources,
-                id, RGB_565(mRS), false);
-        allocation.setName(name);
-        return allocation;
+    private void loadTexture(int id, String name) {
+	Allocation.createAndUploadFromBitmapResource(mRS, mResources, id, RGB_565(mRS), false,name,0);
     }
 
-    private Allocation loadTextureARGB(int id, String name) {
+    private void loadTextureARGB(int id, String name) {
         Bitmap b = BitmapFactory.decodeResource(mResources, id, mOptionsARGB);
-        final Allocation allocation = Allocation.createFromBitmap(mRS, b, RGBA_8888(mRS), false);
-        allocation.setName(name);
-        return allocation;
+	Allocation.createAndUploadFromBitmap(mRS, b, RGBA_8888(mRS), false,name,0);
     }
 
     private void createProgramFragment() {

@@ -178,28 +178,18 @@ class NexusRS extends RenderScriptScene {
     }
 
     private void loadTextures() {
-        mTextures[0] = loadTexture(R.drawable.pyramid_background, "TBackground");
-        mTextures[1] = loadTextureARGB(R.drawable.pulse, "TPulse");
-        mTextures[2] = loadTextureARGB(R.drawable.glow, "TGlow");
-
-        final int count = mTextures.length;
-        for (int i = 0; i < count; i++) {
-            mTextures[i].uploadToTexture(0);
-        }
+        loadTexture(R.drawable.pyramid_background, "TBackground");
+        loadTextureARGB(R.drawable.pulse, "TPulse");
+        loadTextureARGB(R.drawable.glow, "TGlow");
     }
 
-    private Allocation loadTexture(int id, String name) {
-        final Allocation allocation = Allocation.createFromBitmapResource(mRS, mResources,
-                id, RGB_565(mRS), false);
-        allocation.setName(name);
-        return allocation;
+    private void loadTexture(int id, String name) {
+	Allocation.createAndUploadFromBitmapResource(mRS, mResources, id, RGB_565(mRS), false, name, 0);
     }
 
-    private Allocation loadTextureARGB(int id, String name) {
+    private void loadTextureARGB(int id, String name) {
         Bitmap b = BitmapFactory.decodeResource(mResources, id, mOptionsARGB);
-        final Allocation allocation = Allocation.createFromBitmap(mRS, b, RGBA_8888(mRS), false);
-        allocation.setName(name);
-        return allocation;
+        Allocation.createAndUploadFromBitmap(mRS, b, RGBA_8888(mRS), false, name, 0);
     }
 
     private void createProgramFragment() {
