@@ -63,13 +63,13 @@ void alpha(float a) {
 void drawNight(int width, int height) {
     bindTexture(NAMED_PFBackground, 0, NAMED_TNight);
     drawQuadTexCoords(
-            0.0f, 0.0f, 0.0f,
+            0.0f, -32.0f, 0.0f,
             0.0f, 1.0f,
-            320, 0.0f, 0.0f,
-            1.0f, 1.0f,
-            320, 480.0f - 0.0f, 0.0f,
-            1.0f, 0.0f,
-            0.0f, 480.0f - 0.0f, 0.0f,
+            width, -32.0f, 0.0f,
+            2.0f, 1.0f,
+            width, 1024.0f - 32.0f, 0.0f,
+            2.0f, 0.0f,
+            0.0f, 1024.0f - 32.0f, 0.0f,
             0.0f, 0.0f);
 }
 
@@ -103,7 +103,7 @@ int drawBlade(float *bladeStruct, float *bladeBuffer, int *bladeColor,
     float lengthX = bladeStruct[BLADE_STRUCT_LENGTHX];
     float lengthY = bladeStruct[BLADE_STRUCT_LENGTHY];
 
-    int size = bladeStruct[BLADE_STRUCT_SIZE]/1.5;
+    int size = bladeStruct[BLADE_STRUCT_SIZE];
 
     float h = bladeStruct[BLADE_STRUCT_H];
     float s = bladeStruct[BLADE_STRUCT_S];
