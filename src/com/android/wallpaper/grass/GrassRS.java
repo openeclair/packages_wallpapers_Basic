@@ -62,7 +62,7 @@ class GrassRS extends RenderScriptScene {
 
     private static final int RSID_STATE = 0;
     private static final int RSID_BLADES = 1;
-    private static final int BLADES_COUNT = 200;
+    private static final int BLADES_COUNT = 100;
     private static final int BLADE_STRUCT_FIELDS_COUNT = 13;
     private static final int BLADE_STRUCT_ANGLE = 0;
     private static final int BLADE_STRUCT_SIZE = 1;
