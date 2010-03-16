@@ -45,7 +45,7 @@ import com.android.wallpaper.RenderScriptScene;
 
 class GalaxyRS extends RenderScriptScene {
     private static final int GALAXY_RADIUS = 300;
-    private static final int PARTICLES_COUNT = 12000;
+    private static final int PARTICLES_COUNT = 600;
 
     private static final int RSID_STATE = 0;
     private static final int RSID_PARTICLES = 1;
