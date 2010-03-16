@@ -17,8 +17,8 @@
 #pragma stateFragment(PFTexture)
 #pragma stateStore(PSSolid)
 
-#define MAX_PULSES           10
-#define MAX_EXTRAS           20
+#define MAX_PULSES           20
+#define MAX_EXTRAS           40
 #define PULSE_SIZE           8 // Size in pixels of a cell
 #define HALF_PULSE_SIZE      4
 #define GLOW_SIZE            32 // Size of the leading glow in pixels
