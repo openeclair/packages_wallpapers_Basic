@@ -108,11 +108,7 @@ class FallRS extends RenderScriptScene {
     public Bundle onCommand(String action, int x, int y, int z, Bundle extras,
             boolean resultRequested) {
         if (WallpaperManager.COMMAND_TAP.equals(action)) {
-	    if(mWorldState.rotate == 0){
             addDrop(x + (mWorldState.width * mWorldState.xOffset), y);
-	    } else {
-            addDrop(x, y - (mWorldState.height * mWorldState.xOffset));
-	    }
         } else if (WallpaperManager.COMMAND_DROP.equals(action)) {
             addDrop(x + (mWorldState.width * mWorldState.xOffset), y);
         }
