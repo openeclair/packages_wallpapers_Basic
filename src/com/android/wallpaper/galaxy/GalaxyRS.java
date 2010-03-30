@@ -213,18 +213,32 @@ class GalaxyRS extends RenderScriptScene {
     }
 
     private void loadTextures() {
-        loadTexture(R.drawable.space, "TSpace");
-        loadTexture(R.drawable.light1, "TLight1");
-        loadTextureARGB(R.drawable.flares, "TFlares");
+        mTextures = new Allocation[TEXTURES_COUNT];
+
+        final Allocation[] textures = mTextures;
+        textures[RSID_TEXTURE_SPACE] = loadTexture(R.drawable.space, "TSpace");
+        textures[RSID_TEXTURE_LIGHT1] = loadTexture(R.drawable.light1, "TLight1");
+        textures[RSID_TEXTURE_FLARES] = loadTextureARGB(R.drawable.flares, "TFlares");
+
+        final int count = textures.length;
+        for (int i = 0; i < count; i++) {
+            textures[i].uploadToTexture(0);
+        }
     }
 
-    private void loadTexture(int id, String name) {
-	Allocation.createAndUploadFromBitmapResource(mRS, mResources, id, RGB_565(mRS), false, name, 0);
+    private Allocation loadTexture(int id, String name) {
+        final Allocation allocation = Allocation.createFromBitmapResource(mRS, mResources,
+                id, RGB_565(mRS), false);
+        allocation.setName(name);
+        return allocation;
     }
 
-    private void loadTextureARGB(int id, String name) {
+    // TODO: Fix Allocation.createFromBitmapResource() to do this when RGBA_8888 is specified
+    private Allocation loadTextureARGB(int id, String name) {
         Bitmap b = BitmapFactory.decodeResource(mResources, id, mOptionsARGB);
-        Allocation.createAndUploadFromBitmap(mRS, b, RGBA_8888(mRS), false, name, 0);
+        final Allocation allocation = Allocation.createFromBitmap(mRS, b, RGBA_8888(mRS), false);
+        allocation.setName(name);
+        return allocation;
     }
 
     private void createProgramFragment() {

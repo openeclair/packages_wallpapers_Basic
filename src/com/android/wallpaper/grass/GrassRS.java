@@ -92,7 +92,7 @@ class GrassRS extends RenderScriptScene {
     private ProgramVertex.MatrixAllocation mPvOrthoAlloc;
 
     @SuppressWarnings({ "FieldCanBeLocal" })
-    private Allocation[] mTexture;
+    private Allocation[] mTextures;
 
     private Type mStateType;
     private Allocation mState;
@@ -348,15 +348,19 @@ class GrassRS extends RenderScriptScene {
     }
 
     private void loadTextures() {
-        mTexture = new Allocation[1];
+        mTextures = new Allocation[TEXTURES_COUNT];
 
-	loadTexture(R.drawable.night, "TNight");
-        loadTexture(R.drawable.sunrise, "TSunrise");
-        loadTexture(R.drawable.sky, "TSky");
-        loadTexture(R.drawable.sunset, "TSunset");
+        final Allocation[] textures = mTextures;
+        textures[0] = loadTexture(R.drawable.night, "TNight");
+        textures[1] = loadTexture(R.drawable.sunrise, "TSunrise");
+        textures[2] = loadTexture(R.drawable.sky, "TSky");
+        textures[3] = loadTexture(R.drawable.sunset, "TSunset");
+        textures[4] = generateTextureAlpha(4, 1, new int[] { 0x00FFFF00 }, "TAa");
 
-	mTexture[0] = generateTextureAlpha(4, 1, new int[] { 0x00FFFF00 }, "TAa");
-        mTexture[0].uploadToTexture(0);
+        final int count = textures.length;
+        for (int i = 0; i < count; i++) {
+            textures[i].uploadToTexture(0);
+        }
     }
 
     private Allocation generateTextureAlpha(int width, int height, int[] data, String name) {
@@ -370,8 +374,11 @@ class GrassRS extends RenderScriptScene {
         return allocation;
     }
 
-    private void loadTexture(int id, String name) {
-	Allocation.createAndUploadFromBitmapResource(mRS, mResources, id, RGB_565(mRS), false, name, 0);
+    private Allocation loadTexture(int id, String name) {
+        final Allocation allocation = Allocation.createFromBitmapResource(mRS, mResources,
+                id, RGB_565(mRS), false);
+        allocation.setName(name);
+        return allocation;
     }
 
     private void createProgramFragment() {

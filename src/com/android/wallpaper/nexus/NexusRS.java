@@ -282,19 +282,28 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
     }
 
     private void loadTextures() {
-        loadTexture(R.drawable.pyramid_background, "TBackground");
-        loadTextureARGB(R.drawable.pulse, "TPulse");
-        loadTextureARGB(R.drawable.glow, "TGlow");
-        loadTexture(R.drawable.dark_pyramid_background, "TBackgroundDark");
+        mTextures[0] = loadTexture(R.drawable.pyramid_background, "TBackground");
+        mTextures[1] = loadTextureARGB(R.drawable.pulse, "TPulse");
+        mTextures[2] = loadTextureARGB(R.drawable.glow, "TGlow");
+
+        final int count = mTextures.length;
+        for (int i = 0; i < count; i++) {
+            mTextures[i].uploadToTexture(0);
+        }
     }
 
-    private void loadTexture(int id, String name) {
-        Allocation.createAndUploadFromBitmapResource(mRS, mResources, id, RGB_565(mRS), false, name, 0);
+    private Allocation loadTexture(int id, String name) {
+        final Allocation allocation = Allocation.createFromBitmapResource(mRS, mResources,
+                id, RGB_565(mRS), false);
+        allocation.setName(name);
+        return allocation;
     }
 
-    private void loadTextureARGB(int id, String name) {
+    private Allocation loadTextureARGB(int id, String name) {
         Bitmap b = BitmapFactory.decodeResource(mResources, id, mOptionsARGB);
-        Allocation.createAndUploadFromBitmap(mRS, b, RGBA_8888(mRS), false, name, 0);
+        final Allocation allocation = Allocation.createFromBitmap(mRS, b, RGBA_8888(mRS), false);
+        allocation.setName(name);
+        return allocation;
     }
 
     private void createProgramFragment() {
