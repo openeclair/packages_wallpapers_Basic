@@ -118,34 +118,34 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         /**
          * @param String[] values: String array of HEX color values (ex: "#FFFFFF").
          */
-        public Preset(String[] values) {
-            super();
-            
-            int color0 = Integer.decode(values[0]).intValue();
-            this.color0r = ( (color0 >> 16) & 0xFF) / 255.0f;
-            this.color0g = ( (color0 >> 8) & 0xFF ) / 255.0f;
-            this.color0b = ( color0 & 0xFF ) / 255.0f;
-            
-            int color1 = Integer.decode(values[1]).intValue();
-            this.color1r = ( (color1 >> 16) & 0xFF) / 255.0f;
-            this.color1g = ( (color1 >> 8) & 0xFF ) / 255.0f;
-            this.color1b = ( color1 & 0xFF ) / 255.0f;
-            
-            int color2 = Integer.decode(values[2]).intValue();
-            this.color2r = ( (color2 >> 16) & 0xFF) / 255.0f;
-            this.color2g = ( (color2 >> 8) & 0xFF ) / 255.0f;
-            this.color2b = ( color2 & 0xFF ) / 255.0f;
-            
-            int color3 = Integer.decode(values[3]).intValue();
-            this.color3r = ( (color3 >> 16) & 0xFF) / 255.0f;
-            this.color3g = ( (color3 >> 8) & 0xFF ) / 255.0f;
-            this.color3b = ( color3 & 0xFF ) / 255.0f;
-        }
+    	public Preset(String[] values) {
+    		super();
+    		
+    		int color0 = Integer.decode(values[0]).intValue();
+    		this.color0r = ( (color0 >> 16) & 0xFF) / 255.0f;
+    		this.color0g = ( (color0 >> 8) & 0xFF ) / 255.0f;
+    		this.color0b = ( color0 & 0xFF ) / 255.0f;
+    		
+    		int color1 = Integer.decode(values[1]).intValue();
+    		this.color1r = ( (color1 >> 16) & 0xFF) / 255.0f;
+    		this.color1g = ( (color1 >> 8) & 0xFF ) / 255.0f;
+    		this.color1b = ( color1 & 0xFF ) / 255.0f;
+    		
+    		int color2 = Integer.decode(values[2]).intValue();
+    		this.color2r = ( (color2 >> 16) & 0xFF) / 255.0f;
+    		this.color2g = ( (color2 >> 8) & 0xFF ) / 255.0f;
+    		this.color2b = ( color2 & 0xFF ) / 255.0f;
+    		
+    		int color3 = Integer.decode(values[3]).intValue();
+    		this.color3r = ( (color3 >> 16) & 0xFF) / 255.0f;
+    		this.color3g = ( (color3 >> 8) & 0xFF ) / 255.0f;
+    		this.color3b = ( color3 & 0xFF ) / 255.0f;
+    	}
 
-        public float color0r, color0g, color0b;
-        public float color1r, color1g, color1b;
-        public float color2r, color2g, color2b;
-        public float color3r, color3g, color3b;
+    	public float color0r, color0g, color0b;
+    	public float color1r, color1g, color1b;
+    	public float color2r, color2g, color2b;
+    	public float color3r, color3g, color3b;
     }
     
     /*
@@ -162,8 +162,8 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         for (String presetId : presetIds) {
             preset[Integer.valueOf(presetId)] = new Preset(res.getStringArray(res.getIdentifier(
                     "nexus_colorscheme_" + presetId, "array", "com.android.wallpaper")));
-        }
-        return preset;
+    	}
+    	return preset;
     }
     
     @Override
@@ -285,7 +285,8 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         mTextures[0] = loadTexture(R.drawable.pyramid_background, "TBackground");
         mTextures[1] = loadTextureARGB(R.drawable.pulse, "TPulse");
         mTextures[2] = loadTextureARGB(R.drawable.glow, "TGlow");
-
+        mTextures[3] = loadTexture(R.drawable.dark_pyramid_background, "TBackgroundDark");
+        
         final int count = mTextures.length;
         for (int i = 0; i < count; i++) {
             mTextures[i].uploadToTexture(0);
