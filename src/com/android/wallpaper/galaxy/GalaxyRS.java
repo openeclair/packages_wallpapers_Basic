@@ -33,7 +33,6 @@ import static android.renderscript.Sampler.Value.WRAP;
 import static android.renderscript.ProgramStore.DepthFunc.*;
 import static android.renderscript.ProgramStore.BlendDstFunc;
 import static android.renderscript.ProgramStore.BlendSrcFunc;
-import static android.renderscript.ProgramFragment.EnvMode.*;
 import static android.renderscript.Element.*;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -48,8 +47,7 @@ class GalaxyRS extends RenderScriptScene {
     private static final int PARTICLES_COUNT = 12000;
 
     private static final int RSID_STATE = 0;
-    private static final int RSID_PARTICLES = 1;
-    private static final int RSID_PARTICLES_BUFFER = 2;
+    private static final int RSID_PARTICLES_BUFFER = 1;
 
     private static final int TEXTURES_COUNT = 3;
     private static final int RSID_TEXTURE_SPACE = 0;
@@ -67,7 +65,9 @@ class GalaxyRS extends RenderScriptScene {
     @SuppressWarnings({"FieldCanBeLocal"})
     private ProgramStore mPfsLights;
     @SuppressWarnings({"FieldCanBeLocal"})
-    private ProgramVertex mPvBackground;
+    private ProgramVertex mPvBkOrtho;
+    @SuppressWarnings({"FieldCanBeLocal"})
+    private ProgramVertex mPvBkProj;
     @SuppressWarnings({"FieldCanBeLocal"})
     private ProgramVertex mPvStars;
     @SuppressWarnings({"FieldCanBeLocal"})
@@ -84,8 +84,6 @@ class GalaxyRS extends RenderScriptScene {
     private GalaxyState mGalaxyState;
     private Type mStateType;
     private Allocation mState;
-    private Allocation mParticles;
-    private Type mParticlesType;
     private Allocation mParticlesBuffer;
     @SuppressWarnings({"FieldCanBeLocal"})
     private SimpleMesh mParticlesMesh;
@@ -100,17 +98,16 @@ class GalaxyRS extends RenderScriptScene {
 
     @Override
     protected ScriptC createScript() {
+        createScriptStructures();
         createProgramVertex();
         createProgramRaster();
         createProgramFragmentStore();
         createProgramFragment();
-        createScriptStructures();
         loadTextures();
 
         ScriptC.Builder sb = new ScriptC.Builder(mRS);
         sb.setType(mStateType, "State", RSID_STATE);
         sb.setType(mParticlesMesh.getVertexType(0), "Particles", RSID_PARTICLES_BUFFER);
-        sb.setType(mParticlesType, "Stars", RSID_PARTICLES);
         mInitParticles = sb.addInvokable("initParticles");
         sb.setScript(mResources, R.raw.galaxy);
         sb.setRoot(true);
@@ -120,7 +117,6 @@ class GalaxyRS extends RenderScriptScene {
         script.setTimeZone(TimeZone.getDefault().getID());
 
         script.bindAllocation(mState, RSID_STATE);
-        script.bindAllocation(mParticles, RSID_PARTICLES);
         script.bindAllocation(mParticlesBuffer, RSID_PARTICLES_BUFFER);
         mInitParticles.execute();
 
@@ -130,14 +126,14 @@ class GalaxyRS extends RenderScriptScene {
     private void createScriptStructures() {
         createState();
         createParticlesMesh();
-        createParticles();
     }
 
     private void createParticlesMesh() {
         final Builder elementBuilder = new Builder(mRS);
-        elementBuilder.addUNorm8RGBA("");
-        elementBuilder.addFloatXYZ("");
-        elementBuilder.addFloatPointSize("");
+        elementBuilder.add(Element.createAttrib(mRS, Element.DataType.UNSIGNED_8,
+                Element.DataKind.USER, 4), "color");
+        elementBuilder.add(Element.createAttrib(mRS, Element.DataType.FLOAT_32,
+                Element.DataKind.USER, 3), "position");
         final Element vertexElement = elementBuilder.create();
 
         final SimpleMesh.Builder meshBuilder = new SimpleMesh.Builder(mRS);
@@ -167,6 +163,8 @@ class GalaxyRS extends RenderScriptScene {
         mState.data(mGalaxyState);
 
         mPvOrthoAlloc.setupOrthoWindow(mWidth, mHeight);
+        mPvProjectionAlloc.setupProjectionNormalized(mWidth, mHeight);
+
         mInitParticles.execute();
     }
 
@@ -178,14 +176,6 @@ class GalaxyRS extends RenderScriptScene {
         public float xOffset;
         public int isPreview;
         public int scale;
-    }
-
-    static class GalaxyParticle {
-        public float angle;
-        public float distance;
-        public float speed;
-        public float s;
-        public float t;
     }
 
     private void createState() {
@@ -205,11 +195,6 @@ class GalaxyRS extends RenderScriptScene {
         mStateType = Type.createFromClass(mRS, GalaxyState.class, 1, "GalaxyState");
         mState = Allocation.createTyped(mRS, mStateType);
         mState.data(mGalaxyState);
-    }
-
-    private void createParticles() {
-        mParticlesType = Type.createFromClass(mRS, GalaxyParticle.class, PARTICLES_COUNT, "Particle");
-        mParticles = Allocation.createTyped(mRS, mParticlesType);
     }
 
     private void loadTextures() {
@@ -249,9 +234,9 @@ class GalaxyRS extends RenderScriptScene {
         samplerBuilder.setWrapT(WRAP);
         mSampler = samplerBuilder.create();
 
-        ProgramFragment.Builder builder = new ProgramFragment.Builder(mRS, null, null);
-        builder.setTexEnable(true, 0);
-        builder.setTexEnvMode(REPLACE, 0);
+        ProgramFragment.Builder builder = new ProgramFragment.Builder(mRS);
+        builder.setTexture(ProgramFragment.Builder.EnvMode.REPLACE,
+                           ProgramFragment.Builder.Format.RGB, 0);
         mPfBackground = builder.create();
         mPfBackground.setName("PFBackground");
         mPfBackground.bindSampler(mSampler, 0);
@@ -263,10 +248,10 @@ class GalaxyRS extends RenderScriptScene {
         samplerBuilder.setWrapT(WRAP);
         mStarSampler = samplerBuilder.create();
 
-        builder = new ProgramFragment.Builder(mRS, null, null);
+        builder = new ProgramFragment.Builder(mRS);
         builder.setPointSpriteTexCoordinateReplacement(true);
-        builder.setTexEnable(true, 0);
-        builder.setTexEnvMode(MODULATE, 0);
+        builder.setTexture(ProgramFragment.Builder.EnvMode.MODULATE,
+                           ProgramFragment.Builder.Format.RGBA, 0);
         mPfStars = builder.create();
         mPfStars.setName("PFStars");
         mPfBackground.bindSampler(mStarSampler, 0);
@@ -294,15 +279,40 @@ class GalaxyRS extends RenderScriptScene {
         mPvOrthoAlloc.setupOrthoWindow(mWidth, mHeight);
 
         ProgramVertex.Builder builder = new ProgramVertex.Builder(mRS, null, null);
-        mPvBackground = builder.create();
-        mPvBackground.bindAllocation(mPvOrthoAlloc);
-        mPvBackground.setName("PVBackground");
+        mPvBkOrtho = builder.create();
+        mPvBkOrtho.bindAllocation(mPvOrthoAlloc);
+        mPvBkOrtho.setName("PVBkOrtho");
 
         mPvProjectionAlloc = new ProgramVertex.MatrixAllocation(mRS);
         mPvProjectionAlloc.setupProjectionNormalized(mWidth, mHeight);
 
         builder = new ProgramVertex.Builder(mRS, null, null);
-        mPvStars = builder.create();
+        mPvBkProj = builder.create();
+        mPvBkProj.bindAllocation(mPvProjectionAlloc);
+        mPvBkProj.setName("PVBkProj");
+
+        ProgramVertex.ShaderBuilder sb = new ProgramVertex.ShaderBuilder(mRS);
+        String t = "void main() {\n" +
+                    "  float dist = ATTRIB_position.y;\n" +
+                    "  float angle = ATTRIB_position.x;\n" +
+                    "  float x = dist * sin(angle);\n" +
+                    "  float y = dist * cos(angle) * 0.892;\n" +
+                    "  float p = dist * 5.5;\n" +
+                    "  float s = cos(p);\n" +
+                    "  float t = sin(p);\n" +
+                    "  vec4 pos;\n" +
+                    "  pos.x = t * x + s * y;\n" +
+                    "  pos.y = s * x - t * y;\n" +
+                    "  pos.z = ATTRIB_position.z;\n" +
+                    "  pos.w = 1.0;\n" +
+                    "  gl_Position = UNI_MVP * pos;\n" +
+                    "  gl_PointSize = ATTRIB_color.a * 10.0;\n" +
+                    "  varColor.rgb = ATTRIB_color.rgb;\n" +
+                    "  varColor.a = 1.0;\n" +
+                    "}\n";
+        sb.setShader(t);
+        sb.addInput(mParticlesMesh.getVertexType(0).getElement());
+        mPvStars = sb.create();
         mPvStars.bindAllocation(mPvProjectionAlloc);
         mPvStars.setName("PVStars");
     }

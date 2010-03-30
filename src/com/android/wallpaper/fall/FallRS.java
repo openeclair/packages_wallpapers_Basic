@@ -17,6 +17,7 @@
 package com.android.wallpaper.fall;
 
 import android.os.Bundle;
+import android.renderscript.Element;
 import android.renderscript.ScriptC;
 import android.renderscript.ProgramFragment;
 import android.renderscript.ProgramStore;
@@ -28,11 +29,10 @@ import android.renderscript.Type;
 import android.renderscript.SimpleMesh;
 import android.renderscript.Script;
 import static android.renderscript.Sampler.Value.LINEAR;
-import static android.renderscript.Sampler.Value.WRAP;
+import static android.renderscript.Sampler.Value.CLAMP;
 import static android.renderscript.ProgramStore.DepthFunc.*;
 import static android.renderscript.ProgramStore.BlendDstFunc;
 import static android.renderscript.ProgramStore.BlendSrcFunc;
-import static android.renderscript.ProgramFragment.EnvMode.*;
 import static android.renderscript.Element.*;
 
 import android.app.WallpaperManager;
@@ -49,15 +49,19 @@ class FallRS extends RenderScriptScene {
     private static final int MESH_RESOLUTION = 48;
 
     private static final int RSID_STATE = 0;
+    private static final int RSID_CONSTANTS = 1;
+    private static final int RSID_DROP = 2;
 
     private static final int TEXTURES_COUNT = 2;
     private static final int RSID_TEXTURE_RIVERBED = 0;
     private static final int RSID_TEXTURE_LEAVES = 1;
     private static final int RSID_TEXTURE_SKY = 2;
 
-    private static final int RSID_RIPPLE_MAP = 1;
-    private static final int RSID_DROP = 2;
 
+
+    static class Defines {
+
+    };
 
     private final BitmapFactory.Options mOptionsARGB = new BitmapFactory.Options();
 
@@ -71,6 +75,7 @@ class FallRS extends RenderScriptScene {
     private ProgramStore mPfsLeaf;
     @SuppressWarnings({"FieldCanBeLocal"})
     private ProgramVertex mPvSky;
+    private ProgramVertex mPvWater;
     private ProgramVertex.MatrixAllocation mPvOrthoAlloc;
     @SuppressWarnings({"FieldCanBeLocal"})
     private Sampler mSampler;
@@ -81,13 +86,12 @@ class FallRS extends RenderScriptScene {
     private Type mStateType;
     private Type mDropType;
     private int mMeshWidth;
+    private Allocation mUniformAlloc;
 
     private int mMeshHeight;
     @SuppressWarnings({"FieldCanBeLocal"})
     private SimpleMesh mMesh;
     private WorldState mWorldState;
-
-    private Allocation mRippleMap;
 
     private float mGlHeight;
 
@@ -114,7 +118,7 @@ class FallRS extends RenderScriptScene {
         }
         return null;
     }
-    
+
     @Override
     public void start() {
         super.start();
@@ -139,16 +143,19 @@ class FallRS extends RenderScriptScene {
 
     @Override
     protected ScriptC createScript() {
+        createMesh();
+        createState();
         createProgramVertex();
         createProgramFragmentStore();
         createProgramFragment();
-        createMesh();
-        createScriptStructures();
         loadTextures();
+
+
 
         ScriptC.Builder sb = new ScriptC.Builder(mRS);
         sb.setType(mStateType, "State", RSID_STATE);
         sb.setType(mDropType, "Drop", RSID_DROP);
+        sb.setType(mUniformAlloc.getType(), "Constants", RSID_CONSTANTS);
         sb.setScript(mResources, R.raw.fall);
         Script.Invokable invokable = sb.addInvokable("initLeaves");
         sb.setRoot(true);
@@ -158,7 +165,7 @@ class FallRS extends RenderScriptScene {
         script.setTimeZone(TimeZone.getDefault().getID());
 
         script.bindAllocation(mState, RSID_STATE);
-        script.bindAllocation(mRippleMap, RSID_RIPPLE_MAP);
+        script.bindAllocation(mUniformAlloc, RSID_CONSTANTS);
         script.bindAllocation(mDropState, RSID_DROP);
 
         invokable.execute();
@@ -167,8 +174,7 @@ class FallRS extends RenderScriptScene {
     }
 
     private void createMesh() {
-        SimpleMesh.TriangleMeshBuilder tmb = new SimpleMesh.TriangleMeshBuilder(mRS, 3,
-                SimpleMesh.TriangleMeshBuilder.TEXTURE_0);
+        SimpleMesh.TriangleMeshBuilder tmb = new SimpleMesh.TriangleMeshBuilder(mRS, 2, 0);
 
         final int width = mWidth > mHeight ? mHeight : mWidth;
         final int height = mWidth > mHeight ? mWidth : mHeight;
@@ -186,11 +192,9 @@ class FallRS extends RenderScriptScene {
         hResolution += 2;
 
         for (int y = 0; y <= hResolution; y++) {
-            final float yOffset = y * quadHeight - glHeight / 2.0f - quadHeight;
-            final float t = 1.0f - y / (float) hResolution;
+            final float yOffset = (((float)y / hResolution) * 2.f - 1.f) * height / width;
             for (int x = 0; x <= wResolution; x++) {
-                tmb.setTexture(x / (float) wResolution, t);
-                tmb.addVertex(-1.0f + x * quadWidth - quadWidth, yOffset, 0.0f);
+                tmb.addVertex(((float)x / wResolution) * 2.f - 1.f, yOffset);
             }
         }
 
@@ -217,26 +221,12 @@ class FallRS extends RenderScriptScene {
         mMeshHeight = hResolution + 1;
     }
 
-    private void createScriptStructures() {
-        final int rippleMapSize = (mMeshWidth + 2) * (mMeshHeight + 2);
-
-        createState(rippleMapSize);
-        createRippleMap(rippleMapSize);
-    }
-
-    private void createRippleMap(int rippleMapSize) {
-        final int[] rippleMap = new int[rippleMapSize * 2];
-        mRippleMap = Allocation.createSized(mRS, USER_I32(mRS), rippleMap.length);
-        mRippleMap.data(rippleMap);
-    }
-
     static class WorldState {
         public int frameCount;
         public int width;
         public int height;
         public int meshWidth;
         public int meshHeight;
-        public int rippleMapSize;
         public int rippleIndex;
         public int leavesCount;
         public float glWidth;
@@ -253,13 +243,12 @@ class FallRS extends RenderScriptScene {
         public int dropY;
     }
 
-    private void createState(int rippleMapSize) {
+    private void createState() {
         mWorldState = new WorldState();
         mWorldState.width = mWidth;
         mWorldState.height = mHeight;
         mWorldState.meshWidth = mMeshWidth;
         mWorldState.meshHeight = mMeshHeight;
-        mWorldState.rippleMapSize = rippleMapSize;
         mWorldState.rippleIndex = 0;
         mWorldState.glWidth = 2.0f;
         mWorldState.glHeight = mGlHeight;
@@ -280,7 +269,7 @@ class FallRS extends RenderScriptScene {
         mDropState = Allocation.createTyped(mRS, mDropType);
         mDropState.data(mDrop);
     }
-    
+
     private void loadTextures() {
         final Allocation[] textures = new Allocation[TEXTURES_COUNT];
         textures[RSID_TEXTURE_RIVERBED] = loadTexture(R.drawable.pond, "TRiverbed");
@@ -311,20 +300,20 @@ class FallRS extends RenderScriptScene {
         Sampler.Builder sampleBuilder = new Sampler.Builder(mRS);
         sampleBuilder.setMin(LINEAR);
         sampleBuilder.setMag(LINEAR);
-        sampleBuilder.setWrapS(WRAP);
-        sampleBuilder.setWrapT(WRAP);
+        sampleBuilder.setWrapS(CLAMP);
+        sampleBuilder.setWrapT(CLAMP);
         mSampler = sampleBuilder.create();
 
-        ProgramFragment.Builder builder = new ProgramFragment.Builder(mRS, null, null);
-        builder.setTexEnable(true, 0);
-        builder.setTexEnvMode(REPLACE, 0);
+        ProgramFragment.Builder builder = new ProgramFragment.Builder(mRS);
+        builder.setTexture(ProgramFragment.Builder.EnvMode.REPLACE,
+                           ProgramFragment.Builder.Format.RGBA, 0);
         mPfBackground = builder.create();
         mPfBackground.setName("PFBackground");
         mPfBackground.bindSampler(mSampler, 0);
 
-        builder = new ProgramFragment.Builder(mRS, null, null);
-        builder.setTexEnable(true, 0);
-        builder.setTexEnvMode(MODULATE, 0);
+        builder = new ProgramFragment.Builder(mRS);
+        builder.setTexture(ProgramFragment.Builder.EnvMode.MODULATE,
+                           ProgramFragment.Builder.Format.RGBA, 0);
         mPfSky = builder.create();
         mPfSky.setName("PFSky");
         mPfSky.bindSampler(mSampler, 0);
@@ -353,10 +342,157 @@ class FallRS extends RenderScriptScene {
         mPvOrthoAlloc.setupProjectionNormalized(mWidth, mHeight);
 
         ProgramVertex.Builder builder = new ProgramVertex.Builder(mRS, null, null);
-        builder.setTextureMatrixEnable(true);
         mPvSky = builder.create();
         mPvSky.bindAllocation(mPvOrthoAlloc);
         mPvSky.setName("PVSky");
+
+        float dw = 480.f / mMeshWidth;
+        float dh = 800.f / mMeshHeight;
+
+        Element.Builder eb = new Element.Builder(mRS);
+        // Make this an array when we can.
+        eb.add(Element.createVector(mRS, Element.DataType.FLOAT_32, 4), "Drop01");
+        eb.add(Element.createVector(mRS, Element.DataType.FLOAT_32, 4), "Drop02");
+        eb.add(Element.createVector(mRS, Element.DataType.FLOAT_32, 4), "Drop03");
+        eb.add(Element.createVector(mRS, Element.DataType.FLOAT_32, 4), "Drop04");
+        eb.add(Element.createVector(mRS, Element.DataType.FLOAT_32, 4), "Drop05");
+        eb.add(Element.createVector(mRS, Element.DataType.FLOAT_32, 4), "Drop06");
+        eb.add(Element.createVector(mRS, Element.DataType.FLOAT_32, 4), "Drop07");
+        eb.add(Element.createVector(mRS, Element.DataType.FLOAT_32, 4), "Drop08");
+        eb.add(Element.createVector(mRS, Element.DataType.FLOAT_32, 4), "Drop09");
+        eb.add(Element.createVector(mRS, Element.DataType.FLOAT_32, 4), "Drop10");
+        eb.add(Element.createVector(mRS, Element.DataType.FLOAT_32, 4), "Offset");
+        Element e = eb.create();
+
+        mUniformAlloc = Allocation.createSized(mRS, e, 1);
+
+
+        ProgramVertex.ShaderBuilder sb = new ProgramVertex.ShaderBuilder(mRS);
+        String t = new String("void main() {\n" +
+                              "  vec4 pos;\n" +
+                              "  pos.x = ATTRIB_position.x;\n" +
+                              "  pos.y = ATTRIB_position.y;\n" +
+                              "  pos.z = 0.0;\n" +
+                              "  pos.w = 1.0;\n" +
+                              "  gl_Position = pos;\n" +
+
+                              // When we resize the texture we will need to tweak this.
+                              "  varTex0.x = (pos.x + 1.0) * 0.25;\n" +
+                              "  varTex0.x += UNI_Offset.x * 0.5 * 0.85;\n" +
+                              "  varTex0.y = (pos.y + 1.6666) * 0.33;\n" +
+                              "  varTex0.w = 0.0;\n" +
+                              "  varColor = vec4(1.0, 1.0, 1.0, 1.0);\n" +
+
+                              "  pos.x += UNI_Offset.x * 2.0;\n" +
+                              "  pos.x += 1.0;\n" +
+                              "  pos.y += 1.0;\n" +
+                              "  pos.x *= 25.0;\n" +
+                              "  pos.y *= 42.0;\n" +
+
+                              "  vec2 delta;\n" +
+                              "  float dist;\n" +
+                              "  float amp;\n" +
+
+                              "  delta = UNI_Drop01.xy - pos.xy;\n" +
+                              "  dist = length(delta);\n" +
+                              "  if (dist < UNI_Drop01.w) { \n" +
+                              "    amp = UNI_Drop01.z * dist;\n" +
+                              "    amp /= UNI_Drop01.w * UNI_Drop01.w;\n" +
+                              "    amp *= sin(UNI_Drop01.w - dist);\n" +
+                              "    varTex0.xy += delta * amp;\n" +
+                              "  }\n" +
+
+                              "  delta = UNI_Drop02.xy - pos.xy;\n" +
+                              "  dist = length(delta);\n" +
+                              "  if (dist < UNI_Drop02.w) { \n" +
+                              "    amp = UNI_Drop02.z * dist;\n" +
+                              "    amp /= UNI_Drop02.w * UNI_Drop02.w;\n" +
+                              "    amp *= sin(UNI_Drop02.w - dist);\n" +
+                              "    varTex0.xy += delta * amp;\n" +
+                              "  }\n" +
+
+                              "  delta = UNI_Drop03.xy - pos.xy;\n" +
+                              "  dist = length(delta);\n" +
+                              "  if (dist < UNI_Drop03.w) { \n" +
+                              "    amp = UNI_Drop03.z * dist;\n" +
+                              "    amp /= UNI_Drop03.w * UNI_Drop03.w;\n" +
+                              "    amp *= sin(UNI_Drop03.w - dist);\n" +
+                              "    varTex0.xy += delta * amp;\n" +
+                              "  }\n" +
+
+                              "  delta = UNI_Drop04.xy - pos.xy;\n" +
+                              "  dist = length(delta);\n" +
+                              "  if (dist < UNI_Drop04.w) { \n" +
+                              "    amp = UNI_Drop04.z * dist;\n" +
+                              "    amp /= UNI_Drop04.w * UNI_Drop04.w;\n" +
+                              "    amp *= sin(UNI_Drop04.w - dist);\n" +
+                              "    varTex0.xy += delta * amp;\n" +
+                              "  }\n" +
+
+                              "  delta = UNI_Drop05.xy - pos.xy;\n" +
+                              "  dist = length(delta);\n" +
+                              "  if (dist < UNI_Drop05.w) { \n" +
+                              "    amp = UNI_Drop05.z * dist;\n" +
+                              "    amp /= UNI_Drop05.w * UNI_Drop05.w;\n" +
+                              "    amp *= sin(UNI_Drop05.w - dist);\n" +
+                              "    varTex0.xy += delta * amp;\n" +
+                              "  }\n" +
+
+                              "  delta = UNI_Drop06.xy - pos.xy;\n" +
+                              "  dist = length(delta);\n" +
+                              "  if (dist < UNI_Drop06.w) { \n" +
+                              "    amp = UNI_Drop06.z * dist;\n" +
+                              "    amp /= UNI_Drop06.w * UNI_Drop06.w;\n" +
+                              "    amp *= sin(UNI_Drop06.w - dist);\n" +
+                              "    varTex0.xy += delta * amp;\n" +
+                              "  }\n" +
+
+                              "  delta = UNI_Drop07.xy - pos.xy;\n" +
+                              "  dist = length(delta);\n" +
+                              "  if (dist < UNI_Drop07.w) { \n" +
+                              "    amp = UNI_Drop07.z * dist;\n" +
+                              "    amp /= UNI_Drop07.w * UNI_Drop07.w;\n" +
+                              "    amp *= sin(UNI_Drop07.w - dist);\n" +
+                              "    varTex0.xy += delta * amp;\n" +
+                              "  }\n" +
+
+                              "  delta = UNI_Drop08.xy - pos.xy;\n" +
+                              "  dist = length(delta);\n" +
+                              "  if (dist < UNI_Drop08.w) { \n" +
+                              "    amp = UNI_Drop08.z * dist;\n" +
+                              "    amp /= UNI_Drop08.w * UNI_Drop08.w;\n" +
+                              "    amp *= sin(UNI_Drop08.w - dist);\n" +
+                              "    varTex0.xy += delta * amp;\n" +
+                              "  }\n" +
+
+                              "  delta = UNI_Drop09.xy - pos.xy;\n" +
+                              "  dist = length(delta);\n" +
+                              "  if (dist < UNI_Drop09.w) { \n" +
+                              "    amp = UNI_Drop09.z * dist;\n" +
+                              "    amp /= UNI_Drop09.w * UNI_Drop09.w;\n" +
+                              "    amp *= sin(UNI_Drop09.w - dist);\n" +
+                              "    varTex0.xy += delta * amp;\n" +
+                              "  }\n" +
+
+                              "  delta = UNI_Drop10.xy - pos.xy;\n" +
+                              "  dist = length(delta);\n" +
+                              "  if (dist < UNI_Drop10.w) { \n" +
+                              "    amp = UNI_Drop10.z * dist;\n" +
+                              "    amp /= UNI_Drop10.w * UNI_Drop10.w;\n" +
+                              "    amp *= sin(UNI_Drop10.w - dist);\n" +
+                              "    varTex0.xy += delta * amp;\n" +
+                              "  }\n" +
+
+
+                              "}\n");
+        sb.setShader(t);
+        sb.addConstant(mUniformAlloc.getType());
+        sb.addInput(mMesh.getVertexType(0).getElement());
+        mPvWater = sb.create();
+        mPvWater.bindAllocation(mPvOrthoAlloc);
+        mPvWater.setName("PVWater");
+        mPvWater.bindConstants(mUniformAlloc, 1);
+
     }
 
     void addDrop(float x, float y) {

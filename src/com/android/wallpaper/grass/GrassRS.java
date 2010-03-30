@@ -17,7 +17,6 @@
 package com.android.wallpaper.grass;
 
 import android.renderscript.Sampler;
-import static android.renderscript.ProgramFragment.EnvMode.*;
 import static android.renderscript.ProgramStore.DepthFunc.*;
 import static android.renderscript.ProgramStore.BlendSrcFunc;
 import static android.renderscript.ProgramStore.BlendDstFunc;
@@ -53,7 +52,7 @@ class GrassRS extends RenderScriptScene {
     @SuppressWarnings({"UnusedDeclaration"})
     private static final String LOG_TAG = "Grass";
     private static final boolean DEBUG = false;
-    
+
     private static final int LOCATION_UPDATE_MIN_TIME = DEBUG ? 5 * 60 * 1000 : 60 * 60 * 1000; // 1 hour
     private static final int LOCATION_UPDATE_MIN_DISTANCE = DEBUG ? 10 : 150 * 1000; // 150 km
 
@@ -63,31 +62,34 @@ class GrassRS extends RenderScriptScene {
     private static final int RSID_STATE = 0;
     private static final int RSID_BLADES = 1;
     private static final int BLADES_COUNT = 200;
-    private static final int BLADE_STRUCT_FIELDS_COUNT = 13;
-    private static final int BLADE_STRUCT_ANGLE = 0;
-    private static final int BLADE_STRUCT_SIZE = 1;
-    private static final int BLADE_STRUCT_XPOS = 2;
-    private static final int BLADE_STRUCT_YPOS = 3;
-    private static final int BLADE_STRUCT_OFFSET = 4;
-    private static final int BLADE_STRUCT_SCALE = 5;
-    private static final int BLADE_STRUCT_LENGTHX = 6;
-    private static final int BLADE_STRUCT_LENGTHY = 7;
-    private static final int BLADE_STRUCT_HARDNESS = 8;
-    private static final int BLADE_STRUCT_H = 9;
-    private static final int BLADE_STRUCT_S = 10;
-    private static final int BLADE_STRUCT_B = 11;
-    private static final int BLADE_STRUCT_TURBULENCEX = 12;
+
+    class BladesStruct {
+        public float angle;
+        public int size;
+        public float xPos;
+        public float yPos;
+        public float offset;
+        public float scale;
+        public float lengthX;
+        public float lengthY;
+        public float hardness;
+        public float h;
+        public float s;
+        public float b;
+        public float turbulencex;
+    };
 
     private static final int RSID_BLADES_BUFFER = 2;
 
+    private ScriptC.Invokable mUpdateBladesInvokable;
     @SuppressWarnings({ "FieldCanBeLocal" })
     private ProgramFragment mPfBackground;
+    @SuppressWarnings({ "FieldCanBeLocal" })
+    private ProgramFragment mPfGrass;
     @SuppressWarnings({ "FieldCanBeLocal" })
     private ProgramStore mPfsBackground;
     @SuppressWarnings({ "FieldCanBeLocal" })
     private ProgramVertex mPvBackground;
-    @SuppressWarnings({"FieldCanBeLocal"})
-    private Sampler mSampler;
     @SuppressWarnings({"FieldCanBeLocal"})
     private ProgramVertex.MatrixAllocation mPvOrthoAlloc;
 
@@ -97,13 +99,17 @@ class GrassRS extends RenderScriptScene {
     private Type mStateType;
     private Allocation mState;
 
+    private Type mBladesType;
     private Allocation mBlades;
     private Allocation mBladesBuffer;
+    private Allocation mBladesIndicies;
     @SuppressWarnings({"FieldCanBeLocal"})
     private SimpleMesh mBladesMesh;
 
-    private int mTriangles;
-    private float[] mBladesData;
+
+    private int mVerticies;
+    private int mIndicies;
+    private int[] mBladeSizes;
     private final float[] mFloatData5 = new float[5];
 
     private WorldState mWorldState;
@@ -132,7 +138,7 @@ class GrassRS extends RenderScriptScene {
             filter.addAction(Intent.ACTION_DATE_CHANGED);
             filter.addAction(Intent.ACTION_TIME_CHANGED);
             filter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
-    
+
             mContext.registerReceiver(mTimezoneTracker, filter);
         }
 
@@ -153,7 +159,7 @@ class GrassRS extends RenderScriptScene {
             mContext.unregisterReceiver(mTimezoneTracker);
             mTimezoneTracker = null;
         }
-        
+
         if (mLocationUpdater != null) {
             mLocationManager.removeUpdates(mLocationUpdater);
             mLocationUpdater = null;
@@ -168,27 +174,24 @@ class GrassRS extends RenderScriptScene {
         mWorldState.height = height;
         mState.data(mWorldState);
 
-        final float[] blades = mBladesData;
-        for (int i = 0; i < blades.length; i+= BLADE_STRUCT_FIELDS_COUNT) {
-            updateBlade(blades, i);
-        }
-        mBlades.data(blades);
-
-        mPvOrthoAlloc.setupOrthoWindow(width, height);        
+        mUpdateBladesInvokable.execute();
+        mPvOrthoAlloc.setupOrthoWindow(width, height);
     }
 
     @Override
     protected ScriptC createScript() {
         createProgramVertex();
         createProgramFragmentStore();
+        loadTextures();
         createProgramFragment();
         createScriptStructures();
-        loadTextures();
 
         ScriptC.Builder sb = new ScriptC.Builder(mRS);
         sb.setType(mStateType, "State", RSID_STATE);
+        sb.setType(mBladesType, "Blades", RSID_BLADES);
         sb.setScript(mResources, R.raw.grass);
         sb.setRoot(true);
+        mUpdateBladesInvokable = sb.addInvokable("updateBlades");
 
         ScriptC script = sb.create();
         script.setClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -214,7 +217,7 @@ class GrassRS extends RenderScriptScene {
 
     static class WorldState {
         public int bladesCount;
-        public int trianglesCount;
+        public int indexCount;
         public int width;
         public int height;
         public float xOffset;
@@ -232,7 +235,7 @@ class GrassRS extends RenderScriptScene {
         mWorldState.width = mWidth;
         mWorldState.height = mHeight;
         mWorldState.bladesCount = BLADES_COUNT;
-        mWorldState.trianglesCount = mTriangles;
+        mWorldState.indexCount = mIndicies;
         mWorldState.isPreview = isPreview ? 1 : 0;
         if (isPreview) {
             mWorldState.xOffset = 0.5f;
@@ -244,32 +247,35 @@ class GrassRS extends RenderScriptScene {
     }
 
     private void createBlades() {
-        int triangles = 0;
+        mVerticies = 0;
+        mIndicies = 0;
 
-        mBladesData = new float[BLADES_COUNT * BLADE_STRUCT_FIELDS_COUNT];
+        mBladesType = Type.createFromClass(mRS, BladesStruct.class, BLADES_COUNT, "Blade");
+        mBlades = Allocation.createTyped(mRS, mBladesType);
+        BladesStruct bs = new BladesStruct();
 
-        final float[] blades = mBladesData;
-        for (int i = 0; i < blades.length; i+= BLADE_STRUCT_FIELDS_COUNT) {
-            triangles += createBlade(blades, i);
+        mBladeSizes = new int[BLADES_COUNT];
+        for (int i = 0; i < BLADES_COUNT; i++) {
+            createBlade(bs);
+            mIndicies += bs.size * 2 * 3;
+            mVerticies += bs.size + 2;
+            mBlades.subData(i, bs);
+            mBladeSizes[i] = bs.size;
         }
 
-        mBlades = Allocation.createSized(mRS, USER_F32(mRS), blades.length);
-        mBlades.data(blades);
-
-        mTriangles = triangles;
-
-        createMesh(triangles);
+        createMesh();
     }
 
-    private void createMesh(int triangles) {
+    private void createMesh() {
         Builder elementBuilder = new Builder(mRS);
-        elementBuilder.addUNorm8RGBA();
-        elementBuilder.addFloatXY();
-        elementBuilder.addFloatST();
+        elementBuilder.add(Element.ATTRIB_COLOR_U8_4(mRS), "color");
+        elementBuilder.add(Element.ATTRIB_POSITION_2(mRS), "position");
+        elementBuilder.add(Element.ATTRIB_TEXTURE_2(mRS), "texture");
         final Element vertexElement = elementBuilder.create();
 
         final SimpleMesh.Builder meshBuilder = new SimpleMesh.Builder(mRS);
-        final int vertexSlot = meshBuilder.addVertexType(vertexElement, triangles * 3);
+        final int vertexSlot = meshBuilder.addVertexType(vertexElement, mVerticies  * 2);
+        meshBuilder.setIndexType(Element.INDEX_16(mRS), mIndicies);
         meshBuilder.setPrimitive(Primitive.TRIANGLE);
         mBladesMesh = meshBuilder.create();
         mBladesMesh.setName("BladesMesh");
@@ -277,74 +283,65 @@ class GrassRS extends RenderScriptScene {
         mBladesBuffer = mBladesMesh.createVertexAllocation(vertexSlot);
         mBladesBuffer.setName("BladesBuffer");
         mBladesMesh.bindVertexAllocation(mBladesBuffer, 0);
+        mBladesIndicies = mBladesMesh.createIndexAllocation();
+        mBladesMesh.bindIndexAllocation(mBladesIndicies);
 
         // Assign the texture coordinates of each triangle
         final float[] floatData = mFloatData5;
         final Allocation buffer = mBladesBuffer;
 
+        short[] idx = new short[mIndicies];
+
         int bufferIndex = 0;
-        for (int i = 0; i < triangles; i += 2) {
-            floatData[3] = 0.0f;
-            floatData[4] = 1.0f;
-            buffer.subData1D(bufferIndex, 1, floatData);
-            bufferIndex++;
-
+        int i2 = 0;
+        for (int i = 0; i < mVerticies; i +=2) {
             floatData[3] = 0.0f;
             floatData[4] = 0.0f;
-            buffer.subData1D(bufferIndex, 1, floatData);
-            bufferIndex++;
+            buffer.subData1D(bufferIndex++, 1, floatData);
 
             floatData[3] = 1.0f;
             floatData[4] = 0.0f;
-            buffer.subData1D(bufferIndex, 1, floatData);
-            bufferIndex++;
-
-            floatData[3] = 0.0f;
-            floatData[4] = 0.0f;
-            buffer.subData1D(bufferIndex, 1, floatData);
-            bufferIndex++;
-
-            floatData[3] = 1.0f;
-            floatData[4] = 1.0f;
-            buffer.subData1D(bufferIndex, 1, floatData);
-            bufferIndex++;
-
-            floatData[3] = 1.0f;
-            floatData[4] = 0.0f;
-            buffer.subData1D(bufferIndex, 1, floatData);
-            bufferIndex++;
+            buffer.subData1D(bufferIndex++, 1, floatData);
         }
+
+        int idxIdx = 0;
+        int vtxIdx = 0;
+        for (int i = 0; i < mBladeSizes.length; i++) {
+            for (int ct = 0; ct < mBladeSizes[i]; ct ++) {
+                idx[idxIdx + 0] = (short)(vtxIdx + 0);
+                idx[idxIdx + 1] = (short)(vtxIdx + 1);
+                idx[idxIdx + 2] = (short)(vtxIdx + 2);
+                idx[idxIdx + 3] = (short)(vtxIdx + 1);
+                idx[idxIdx + 4] = (short)(vtxIdx + 3);
+                idx[idxIdx + 5] = (short)(vtxIdx + 2);
+                idxIdx += 6;
+                vtxIdx += 2;
+            }
+            vtxIdx += 2;
+        }
+
+        mBladesIndicies.data(idx);
+        mBladesIndicies.uploadToBufferObject();
     }
 
-    private void updateBlade(float[] blades, int index) {
-        final int xpos = random(-mWidth, mWidth);
-        blades[index + BLADE_STRUCT_XPOS] = xpos;
-        blades[index + BLADE_STRUCT_TURBULENCEX] = xpos * 0.006f;
-        blades[index + BLADE_STRUCT_YPOS] = mHeight;
-    }
-
-    private int createBlade(float[] blades, int index) {
+    private void createBlade(BladesStruct blades) {
         final float size = random(4.0f) + 4.0f;
         final int xpos = random(-mWidth, mWidth);
 
         //noinspection PointlessArithmeticExpression
-        blades[index + BLADE_STRUCT_ANGLE] = 0.0f;
-        blades[index + BLADE_STRUCT_SIZE] = size / TESSELATION;
-        blades[index + BLADE_STRUCT_XPOS] = xpos;
-        blades[index + BLADE_STRUCT_YPOS] = mHeight;
-        blades[index + BLADE_STRUCT_OFFSET] = random(0.2f) - 0.1f;
-        blades[index + BLADE_STRUCT_SCALE] = 4.0f / (size / TESSELATION) +
-                (random(0.6f) + 0.2f) * TESSELATION;
-        blades[index + BLADE_STRUCT_LENGTHX] = (random(4.5f) + 3.0f) * TESSELATION * size;
-        blades[index + BLADE_STRUCT_LENGTHY] = (random(5.5f) + 2.0f) * TESSELATION * size;
-        blades[index + BLADE_STRUCT_HARDNESS] = (random(1.0f) + 0.2f) * TESSELATION;
-        blades[index + BLADE_STRUCT_H] = random(0.02f) + 0.2f;
-        blades[index + BLADE_STRUCT_S] = random(0.22f) + 0.78f;
-        blades[index + BLADE_STRUCT_B] = random(0.65f) + 0.35f;
-        blades[index + BLADE_STRUCT_TURBULENCEX] = xpos * 0.006f;
-
-        // Each blade is made of "size" quads, so we double to count the triangles
-        return (int) (blades[index + BLADE_STRUCT_SIZE]) * 2;
+        blades.angle = 0.0f;
+        blades.size = (int)(size / TESSELATION);
+        blades.xPos = xpos;
+        blades.yPos = mHeight;
+        blades.offset = random(0.2f) - 0.1f;
+        blades.scale = 4.0f / (size / TESSELATION) + (random(0.6f) + 0.2f) * TESSELATION;
+        blades.lengthX = (random(4.5f) + 3.0f) * TESSELATION * size;
+        blades.lengthY = (random(5.5f) + 2.0f) * TESSELATION * size;
+        blades.hardness = (random(1.0f) + 0.2f) * TESSELATION;
+        blades.h = random(0.02f) + 0.2f;
+        blades.s = random(0.22f) + 0.78f;
+        blades.b = random(0.65f) + 0.35f;
+        blades.turbulencex = xpos * 0.006f;
     }
 
     private void loadTextures() {
@@ -367,10 +364,21 @@ class GrassRS extends RenderScriptScene {
         final Type.Builder builder = new Type.Builder(mRS, A_8(mRS));
         builder.add(Dimension.X, width);
         builder.add(Dimension.Y, height);
+        builder.add(Dimension.LOD, 1);
 
         final Allocation allocation = Allocation.createTyped(mRS, builder.create());
-        allocation.data(data);
         allocation.setName(name);
+
+        int[] grey1 = new int[] {0x3f3f3f3f};
+        int[] grey2 = new int[] {0x00000000};
+        Allocation.Adapter2D a = allocation.createAdapter2D();
+        a.setConstraint(Dimension.LOD, 0);
+        a.subData(0, 0, 4, 1, data);
+        a.setConstraint(Dimension.LOD, 1);
+        a.subData(0, 0, 2, 1, grey1);
+        a.setConstraint(Dimension.LOD, 2);
+        a.subData(0, 0, 1, 1, grey2);
+
         return allocation;
     }
 
@@ -383,18 +391,29 @@ class GrassRS extends RenderScriptScene {
 
     private void createProgramFragment() {
         Sampler.Builder samplerBuilder = new Sampler.Builder(mRS);
-        samplerBuilder.setMin(LINEAR);
+        samplerBuilder.setMin(LINEAR_MIP_LINEAR);
         samplerBuilder.setMag(LINEAR);
         samplerBuilder.setWrapS(WRAP);
         samplerBuilder.setWrapT(WRAP);
-        mSampler = samplerBuilder.create();
+        Sampler sl = samplerBuilder.create();
 
-        ProgramFragment.Builder builder = new ProgramFragment.Builder(mRS, null, null);
-        builder.setTexEnable(true, 0);
-        builder.setTexEnvMode(REPLACE, 0);
+        samplerBuilder.setMin(NEAREST);
+        samplerBuilder.setMag(NEAREST);
+        Sampler sn = samplerBuilder.create();
+
+        ProgramFragment.Builder builder = new ProgramFragment.Builder(mRS);
+        builder.setTexture(ProgramFragment.Builder.EnvMode.REPLACE,
+                           ProgramFragment.Builder.Format.ALPHA, 0);
+        mPfGrass = builder.create();
+        mPfGrass.setName("PFGrass");
+        mPfGrass.bindSampler(sl, 0);
+
+        builder = new ProgramFragment.Builder(mRS);
+        builder.setTexture(ProgramFragment.Builder.EnvMode.REPLACE,
+                           ProgramFragment.Builder.Format.RGB, 0);
         mPfBackground = builder.create();
         mPfBackground.setName("PFBackground");
-        mPfBackground.bindSampler(mSampler, 0);
+        mPfBackground.bindSampler(sn, 0);
     }
 
     private void createProgramFragmentStore() {
@@ -412,7 +431,6 @@ class GrassRS extends RenderScriptScene {
         mPvOrthoAlloc.setupOrthoWindow(mWidth, mHeight);
 
         ProgramVertex.Builder pvb = new ProgramVertex.Builder(mRS, null, null);
-        pvb.setTextureMatrixEnable(true);
         mPvBackground = pvb.create();
         mPvBackground.bindAllocation(mPvOrthoAlloc);
         mPvBackground.setName("PVBackground");

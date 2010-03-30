@@ -26,21 +26,10 @@ float skyOffsetY;
 float g_DT;
 int g_LastTime;
 
-struct vert_s {
-    float x;
-    float y;
-    float z;
-    float s;
-    float t;
-};
-
 struct drop_s {
     float ampS;
     float ampE;
     float spread;
-    float spread2;
-    float invSpread;
-    float invSpread2;
     float x;
     float y;
 };
@@ -63,9 +52,7 @@ struct Leaves_s {
 };
 
 struct Leaves_s gLeavesStore[LEAVES_COUNT];
-
 struct Leaves_s* gLeaves[LEAVES_COUNT];
-
 struct Leaves_s* gNextLeaves[LEAVES_COUNT];
 
 void init() {
@@ -75,9 +62,6 @@ void init() {
         gDrops[ct].ampS = 0;
         gDrops[ct].ampE = 0;
         gDrops[ct].spread = 1;
-        gDrops[ct].spread2 = gDrops[ct].spread * gDrops[ct].spread;
-        gDrops[ct].invSpread = 1 / gDrops[ct].spread;
-        gDrops[ct].invSpread2 = gDrops[ct].invSpread * gDrops[ct].invSpread;
     }
 }
 
@@ -107,10 +91,7 @@ void initLeaves() {
 
 void updateDrop(int ct) {
     gDrops[ct].spread += 30.f * g_DT;
-    gDrops[ct].spread2 = gDrops[ct].spread * gDrops[ct].spread;
-    gDrops[ct].invSpread = 1 / gDrops[ct].spread;
-    gDrops[ct].invSpread2 = gDrops[ct].invSpread * gDrops[ct].invSpread;
-    gDrops[ct].ampE = gDrops[ct].ampS * gDrops[ct].invSpread;
+    gDrops[ct].ampE = gDrops[ct].ampS / gDrops[ct].spread;
 }
 
 void drop(int x, int y, float s) {
@@ -131,65 +112,20 @@ void drop(int x, int y, float s) {
 }
 
 void generateRipples() {
-    int rippleMapSize = State->rippleMapSize;
-    int width = State->meshWidth;
-    int height = State->meshHeight;
-    int index = State->rippleIndex;
-    float ratio = (float)State->meshWidth / State->glWidth;
-    float xShift = State->xOffset * ratio * 2;
-
-    float *vertices = loadSimpleMeshVerticesF(NAMED_WaterMesh, 0);
-    struct vert_s *vert = (struct vert_s *)vertices;
-
-    float fw = 1.0f / width;
-    float fh = 1.0f / height;
-    int x, y, ct;
-    struct vert_s *v = vert;
-    for (y=0; y < height; y++) {
-        for (x=0; x < width; x++) {
-            struct drop_s * d = &gDrops[0];
-            float z = 0;
-
-            for (ct = 0; ct < gMaxDrops; ct++) {
-                if (d->ampE > 0.01f) {
-                    float dx = (d->x - xShift) - x;
-                    float dy = d->y - y;
-                    float dist2 = dx*dx + dy*dy;
-                    if (dist2 < d->spread2) {
-                        float dist = sqrtf(dist2);
-                        float a = d->ampE * (dist * d->invSpread);
-                        z += sinf(d->spread - dist) * a;
-                    }
-                }
-                d++;
-            }
-            v->z = z;
-            v ++;
-        }
+    int ct;
+    for (ct = 0; ct < gMaxDrops; ct++) {
+        struct drop_s * d = &gDrops[ct];
+        vecF32_4_t *v = &Constants->Drop01;
+        v += ct;
+        v->x = d->x;
+        v->y = d->y;
+        v->z = d->ampE * 0.12f;
+        v->w = d->spread;
     }
+    Constants->Offset.x = State->xOffset;
+
     for (ct = 0; ct < gMaxDrops; ct++) {
         updateDrop(ct);
-    }
-
-    v = vert;
-    for (y = 0; y < height; y += 1) {
-        for (x = 0; x < width; x += 1) {
-            struct vec3_s n1, n2, n3;
-            vec3Sub(&n1, (struct vec3_s *)&(v+1)->x, (struct vec3_s *)&v->x);
-            vec3Sub(&n2, (struct vec3_s *)&(v+width)->x, (struct vec3_s *)&v->x);
-            vec3Cross(&n3, &n1, &n2);
-
-            // Average of previous normal and N1 x N2
-            vec3Sub(&n1, (struct vec3_s *)&(v+width+1)->x, (struct vec3_s *)&v->x);
-            vec3Cross(&n2, &n1, &n2);
-            vec3Add(&n3, &n3, &n2);
-            //vec3Norm(&n3);  // Not necessary for our constrained mesh.
-
-            v->s = (float)x * fw + n3.x;// * 0.2;
-            v->t = (float)y * fh + n3.y;// * 0.2;
-            v->z = 0;
-            v += 1;
-        }
     }
 }
 
@@ -357,46 +293,8 @@ void drawLeaves() {
 
 void drawRiverbed() {
     bindTexture(NAMED_PFBackground, 0, NAMED_TRiverbed);
-
-    float matrix[16];
-    matrixLoadScale(matrix, 0.5f * 960.0f / 1024.0f, -1.0f * 800.0f / 1024.0f, 1.0f);
-    matrixTranslate(matrix, State->xOffset, 0.0f, 0.0f);
-    vpLoadTextureMatrix(matrix);
-
     drawSimpleMesh(NAMED_WaterMesh);
-
-    matrixLoadIdentity(matrix);
-    vpLoadTextureMatrix(matrix);
 }
-
-/*
-void drawSky() {
-    color(1.0f, 1.0f, 1.0f, 0.5f);
-
-    bindProgramFragment(NAMED_PFSky);
-    bindProgramFragmentStore(NAMED_PFSLeaf);
-    bindTexture(NAMED_PFSky, 0, NAMED_TSky);
-
-    float x = skyOffsetX + State->skySpeedX;
-    float y = skyOffsetY + State->skySpeedY;
-
-    if (x > 1.0f) x = 0.0f;
-    if (x < -1.0f) x = 0.0f;
-    if (y > 1.0f) y = 0.0f;
-
-    skyOffsetX = x;
-    skyOffsetY = y;
-
-    float matrix[16];
-    matrixLoadTranslate(matrix, x + State->xOffset, y, 0.0f);
-    vpLoadTextureMatrix(matrix);
-
-    drawSimpleMesh(NAMED_WaterMesh);
-
-    matrixLoadIdentity(matrix);
-    vpLoadTextureMatrix(matrix);
-}
-*/
 
 int main(int index) {
     // Compute dt in seconds.
@@ -425,17 +323,17 @@ int main(int index) {
         genLeafDrop(gLeaves[i], randf(0.3f) + 0.1f);
     }
 
-    generateRipples();
-    updateSimpleMesh(NAMED_WaterMesh);
-
     if (State->rotate) {
         float matrix[16];
         matrixLoadRotate(matrix, 90.0f, 0.0f, 0.0f, 1.0f);
         vpLoadModelMatrix(matrix);
     }
 
+    bindProgramVertex(NAMED_PVWater);
+    generateRipples();
     drawRiverbed();
-    // drawSky();
+
+    bindProgramVertex(NAMED_PVSky);
     drawLeaves();
 
     return 30;
