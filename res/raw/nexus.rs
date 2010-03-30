@@ -113,7 +113,7 @@ void drawBackground(int width, int height) {
     if (State->background == 0) {
         bindTexture(NAMED_PFTexture565, 0, NAMED_TBackground);
     } else {
-        bindTexture(NAMED_PTTexture565, 0, NAMED_TBackgroundDark);
+        bindTexture(NAMED_PFTexture565, 0, NAMED_TBackgroundDark);
     }
     color(1.0f, 1.0f, 1.0f, 1.0f);
     if (State->rotate) {

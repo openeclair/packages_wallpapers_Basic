@@ -104,12 +104,6 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         mPrefs.registerOnSharedPreferenceChangeListener(this);
         mPreset = buildColors();
 
-        try {
-            mCurrentPreset = Integer.valueOf(mPrefs.getString("colorScheme", "0"));
-        } catch (NumberFormatException e) {
-            mCurrentPreset = 0;
-        }
-        
         mBackground = mPrefs.getString("background","normal");
         mOptionsARGB.inScaled = false;
         mOptionsARGB.inPreferredConfig = Bitmap.Config.ARGB_8888;
@@ -202,8 +196,6 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         sb.setType(mStateType, "State", RSID_STATE);
         sb.setType(mCommandType, "Command", RSID_COMMAND);
 
-        Log.i("NexusLWP-createScript", "mColorScheme: '" + mCurrentPreset+"'");
-
         sb.setScript(mResources, R.raw.nexus);
 
         Script.Invokable invokable = sb.addInvokable("initPulses");
@@ -266,13 +258,32 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
     
     private void createState() {
         mWorldState = new WorldState();
-        makeNewState();
+        /* Try to load a user-specified colorscheme */
+
+        try {
+            mCurrentPreset = Integer.valueOf(mPrefs.getString("colorScheme", "0"));
+        } catch (NumberFormatException e) {
+            mCurrentPreset = -1; // We check this again later.
+        }
 
         try {
             mWorldState.mode = mResources.getInteger(R.integer.nexus_mode);
         } catch (Resources.NotFoundException exc) {
             mWorldState.mode = 0; // standard nexus mode
         }
+
+        /* Sholes devices may specify nexus_mode=1 which means they want to use
+         * the "sholes red" colorscheme.
+         * 
+         * Other devices should use 'Dust' as the default.
+         */
+        if (mWorldState.mode == 1 && mCurrentPreset == -1) {
+            mCurrentPreset = 6; // Sholes Red
+        } else if (mWorldState.mode == 0 && mCurrentPreset == -1) {
+            mCurrentPreset = 0; // Dust
+        }
+
+        makeNewState();
 
         mStateType = Type.createFromClass(mRS, WorldState.class, 1, "WorldState");
         mState = Allocation.createTyped(mRS, mStateType);

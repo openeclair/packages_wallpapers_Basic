@@ -46,6 +46,7 @@
     <item>CyanogenMod</item>
     <item>Candy</item>
     <item>Zion</item>
+    <item>Sholes Red</item>
   </string-array>
   <string-array name="nexus_colorscheme_ids" translatable="false">
     <item>0</item>
@@ -54,6 +55,7 @@
     <item>3</item>
     <item>4</item>
     <item>5</item>
+    <item>6</item>
   </string-array>
   
   <string-array name="nexus_colorscheme_0" translatable="false">
@@ -96,6 +98,13 @@
     <item>#FFA750</item>
     <item>#182629</item>
     <item>#696832</item>
+  </string-array>
+
+  <string-array name="nexus_colorscheme_6" translatable="false">
+    <item>#E61A1A</item>
+    <item>#E61A1A</item>
+    <item>#E61A1A</item>
+    <item>#E61A1A</item>
   </string-array>
 
   <string-array name="nexus_background_names" translatable="false">
