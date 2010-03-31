@@ -61,24 +61,7 @@ class GrassRS extends RenderScriptScene {
 
     private static final int RSID_STATE = 0;
     private static final int RSID_BLADES = 1;
-<<<<<<< HEAD:src/com/android/wallpaper/grass/GrassRS.java
     private static final int BLADES_COUNT = 100;
-    private static final int BLADE_STRUCT_FIELDS_COUNT = 13;
-    private static final int BLADE_STRUCT_ANGLE = 0;
-    private static final int BLADE_STRUCT_SIZE = 1;
-    private static final int BLADE_STRUCT_XPOS = 2;
-    private static final int BLADE_STRUCT_YPOS = 3;
-    private static final int BLADE_STRUCT_OFFSET = 4;
-    private static final int BLADE_STRUCT_SCALE = 5;
-    private static final int BLADE_STRUCT_LENGTHX = 6;
-    private static final int BLADE_STRUCT_LENGTHY = 7;
-    private static final int BLADE_STRUCT_HARDNESS = 8;
-    private static final int BLADE_STRUCT_H = 9;
-    private static final int BLADE_STRUCT_S = 10;
-    private static final int BLADE_STRUCT_B = 11;
-    private static final int BLADE_STRUCT_TURBULENCEX = 12;
-=======
-    private static final int BLADES_COUNT = 200;
 
     class BladesStruct {
         public float angle;
@@ -95,7 +78,6 @@ class GrassRS extends RenderScriptScene {
         public float b;
         public float turbulencex;
     };
->>>>>>> b207399d1b06d4f70a3bbb478903e2faf15c8d29:src/com/android/wallpaper/grass/GrassRS.java
 
     private static final int RSID_BLADES_BUFFER = 2;
 
