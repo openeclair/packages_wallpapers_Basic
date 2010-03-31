@@ -14,7 +14,6 @@
 
 #pragma version(1)
 #pragma stateVertex(PVOrtho)
-#pragma stateFragment(PFTexture)
 #pragma stateStore(PSSolid)
 
 #define MAX_PULSES           10
@@ -110,10 +109,11 @@ void initPulses() {
 }
 
 void drawBackground(int width, int height) {
+    bindProgramFragment(NAMED_PFTexture565);
     if (State->background == 0) {
-    	bindTexture(NAMED_PFTexture, 0, NAMED_TBackground);
+        bindTexture(NAMED_PFTexture565, 0, NAMED_TBackground);
     } else {
-        bindTexture(NAMED_PFTexture, 0, NAMED_TBackgroundDark);
+        bindTexture(NAMED_PFTexture565, 0, NAMED_TBackgroundDark);
     }
     color(1.0f, 1.0f, 1.0f, 1.0f);
     if (State->rotate) {
@@ -266,8 +266,8 @@ int main(int index) {
     gNow = uptimeMillis();
 
     if (Command->command != 0) {
-        debugF("x", Command->x);
-        debugF("y", Command->y);
+        //debugF("x", Command->x);
+        //debugF("y", Command->y);
         Command->command = 0;
         addTap(Command->x, Command->y);
     }

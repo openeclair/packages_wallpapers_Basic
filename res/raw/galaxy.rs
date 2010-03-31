@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #pragma version(1)
-#pragma stateVertex(PVBackground)
+#pragma stateVertex(PVBkOrtho)
 #pragma stateRaster(parent)
 #pragma stateFragment(PFBackground)
 #pragma stateStore(PFSBackground)
@@ -51,25 +51,30 @@ float randomGauss() {
     return x1 * w;
 }
 
+float gSpeed[12000];
+
 /**
  * Generates the properties for a given star.
  */
-void createParticle(struct Stars_s *star, struct Particles_s *part, float scale) {
+void createParticle(struct Particles_s *part, int idx, float scale) {
     float d = fabsf(randomGauss()) * State->galaxyRadius * 0.5f + randf(64.0f);
     float id = d / State->galaxyRadius;
     float z = randomGauss() * 0.4f * (1.0f - id);
     float p = -d * ELLIPSE_TWIST;
 
+    int r,g,b,a;
     if (d < State->galaxyRadius * 0.33f) {
-        part->r = (int) (220 + id * 35);
-        part->g = 220;
-        part->b = 220;
+        r = (int) (220 + id * 35);
+        g = 220;
+        b = 220;
     } else {
-        part->r= 180;
-        part->g = 180;
-        part->b = (int) clampf(140.f + id * 115.f, 140.f, 255.f);
+        r = 180;
+        g = 180;
+        b = (int) clampf(140.f + id * 115.f, 140.f, 255.f);
     }
-    part->a = (int) (140 + (1.0f - id) * 115);
+    // Stash point size * 10 in Alpha
+    a = (int) (randf2(1.2f, 2.1f) * 60);
+    part->color = r | g<<8 | b<<16 | a<<24;
 
     if (d > State->galaxyRadius * 0.15f) {
         z *= 0.6f * (1.0f - id);
@@ -80,14 +85,11 @@ void createParticle(struct Stars_s *star, struct Particles_s *part, float scale)
     // Map to the projection coordinates (viewport.x = -1.0 -> 1.0)
     d = mapf(-4.0f, State->galaxyRadius + 4.0f, 0.0f, scale, d);
 
-    star->angle = randf(TWO_PI);
-    star->distance = d;
-    star->speed = randf2(0.0015f, 0.0025f) * (0.5f + (scale / d)) * 0.8f;
-    star->s = cosf(p);
-    star->t = sinf(p);
+    part->position.x = randf(TWO_PI);
+    part->position.y = d;
+    gSpeed[idx] = randf2(0.0015f, 0.0025f) * (0.5f + (scale / d)) * 0.8f;
 
-    part->z = z / 5.0f;
-    part->pointSize = randf2(1.2f, 2.1f) * 6;
+    part->position.z = z / 5.0f;
 }
 
 /**
@@ -98,15 +100,13 @@ void initParticles() {
         angle = 0.0f;
     }
 
-    struct Stars_s *star = Stars;
     struct Particles_s *part = Particles;
     int particlesCount = State->particlesCount;
     float scale = State->galaxyRadius / (State->width * 0.5f);
 
     int i;
     for (i = 0; i < particlesCount; i ++) {
-        createParticle(star, part, scale);
-        star++;
+        createParticle(part, i, scale);
         part++;
     }
 }
@@ -121,7 +121,7 @@ void drawSpace(float xOffset, int width, int height) {
 }
 
 void drawLights(float xOffset, int width, int height) {
-    bindProgramVertex(NAMED_PVStars);
+    bindProgramVertex(NAMED_PVBkProj);
     bindProgramFragment(NAMED_PFBackground);
     bindTexture(NAMED_PFBackground, 0, NAMED_TLight1);
 
@@ -158,26 +158,16 @@ void drawParticles(float xOffset, float offset, int width, int height) {
     vpLoadModelMatrix(matrix);
 
     // quadratic attenuation
-    pointAttenuation(0.1f + 0.3f * fabsf(offset), 0.0f, 0.06f  + 0.1f *  fabsf(offset));
+    //pointAttenuation(0.1f + 0.3f * fabsf(offset), 0.0f, 0.06f  + 0.1f *  fabsf(offset));
 
     int radius = State->galaxyRadius;
     int particlesCount = State->particlesCount;
 
-    struct Stars_s *star = Stars;
     struct Particles_s *vtx = Particles;
 
     int i = 0;
     for ( ; i < particlesCount; i++) {
-        float a = star->angle + star->speed;
-        float x = star->distance * sinf(a);
-        float y = star->distance * cosf(a) * ELLIPSE_RATIO;
-
-        vtx->x = star->t * x + star->s * y + xOffset;
-        vtx->y = star->s * x - star->t * y;
-
-        star->angle = a;
-
-        star++;
+        vtx->position.x = vtx->position.x + gSpeed[i];
         vtx++;
     }
 

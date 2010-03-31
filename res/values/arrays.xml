@@ -46,6 +46,7 @@
     <item>CyanogenMod</item>
     <item>Candy</item>
     <item>Zion</item>
+    <item>Sholes Red</item>
     <item>Wes Garner</item>
   </string-array>
   <string-array name="nexus_colorscheme_ids" translatable="false">
@@ -55,6 +56,8 @@
     <item>3</item>
     <item>4</item>
     <item>5</item>
+    <item>6</item>
+    <item>7</item>
   </string-array>
   
   <string-array name="nexus_colorscheme_0" translatable="false">
@@ -100,6 +103,13 @@
   </string-array>
 
   <string-array name="nexus_colorscheme_6" translatable="false">
+    <item>#E61A1A</item>
+    <item>#E61A1A</item>
+    <item>#E61A1A</item>
+    <item>#E61A1A</item>
+  </string-array>
+
+  <string-array name="nexus_colorscheme_7" translatable="false">
     <item>#DFF6F7</item>
     <item>#255FA7</item>
     <item>#229894</item>

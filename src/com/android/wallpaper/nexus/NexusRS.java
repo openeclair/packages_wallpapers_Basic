@@ -18,10 +18,9 @@ package com.android.wallpaper.nexus;
 
 import static android.renderscript.Element.RGBA_8888;
 import static android.renderscript.Element.RGB_565;
-import static android.renderscript.ProgramFragment.EnvMode.MODULATE;
-import static android.renderscript.ProgramFragment.EnvMode.REPLACE;
 import static android.renderscript.ProgramStore.DepthFunc.ALWAYS;
 import static android.renderscript.Sampler.Value.LINEAR;
+import static android.renderscript.Sampler.Value.CLAMP;
 import static android.renderscript.Sampler.Value.WRAP;
 
 import com.android.wallpaper.R;
@@ -66,6 +65,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
     private SharedPreferences mPrefs;
 
     private ProgramFragment mPfTexture;
+    private ProgramFragment mPfTexture565;
 
     private ProgramFragment mPfColor;
 
@@ -77,7 +77,8 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
 
     private ProgramVertex.MatrixAllocation mPvOrthoAlloc;
 
-    private Sampler mSampler;
+    private Sampler mClampSampler;
+    private Sampler mWrapSampler;
 
     private Allocation mState;
 
@@ -103,12 +104,6 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         mPrefs.registerOnSharedPreferenceChangeListener(this);
         mPreset = buildColors();
 
-        try {
-            mCurrentPreset = Integer.valueOf(mPrefs.getString("colorScheme", "0"));
-        } catch (NumberFormatException e) {
-            mCurrentPreset = 0;
-        }
-        
         mBackground = mPrefs.getString("background","normal");
         mOptionsARGB.inScaled = false;
         mOptionsARGB.inPreferredConfig = Bitmap.Config.ARGB_8888;
@@ -118,34 +113,34 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         /**
          * @param String[] values: String array of HEX color values (ex: "#FFFFFF").
          */
-        public Preset(String[] values) {
-            super();
-            
-            int color0 = Integer.decode(values[0]).intValue();
-            this.color0r = ( (color0 >> 16) & 0xFF) / 255.0f;
-            this.color0g = ( (color0 >> 8) & 0xFF ) / 255.0f;
-            this.color0b = ( color0 & 0xFF ) / 255.0f;
-            
-            int color1 = Integer.decode(values[1]).intValue();
-            this.color1r = ( (color1 >> 16) & 0xFF) / 255.0f;
-            this.color1g = ( (color1 >> 8) & 0xFF ) / 255.0f;
-            this.color1b = ( color1 & 0xFF ) / 255.0f;
-            
-            int color2 = Integer.decode(values[2]).intValue();
-            this.color2r = ( (color2 >> 16) & 0xFF) / 255.0f;
-            this.color2g = ( (color2 >> 8) & 0xFF ) / 255.0f;
-            this.color2b = ( color2 & 0xFF ) / 255.0f;
-            
-            int color3 = Integer.decode(values[3]).intValue();
-            this.color3r = ( (color3 >> 16) & 0xFF) / 255.0f;
-            this.color3g = ( (color3 >> 8) & 0xFF ) / 255.0f;
-            this.color3b = ( color3 & 0xFF ) / 255.0f;
-        }
+    	public Preset(String[] values) {
+    		super();
+    		
+    		int color0 = Integer.decode(values[0]).intValue();
+    		this.color0r = ( (color0 >> 16) & 0xFF) / 255.0f;
+    		this.color0g = ( (color0 >> 8) & 0xFF ) / 255.0f;
+    		this.color0b = ( color0 & 0xFF ) / 255.0f;
+    		
+    		int color1 = Integer.decode(values[1]).intValue();
+    		this.color1r = ( (color1 >> 16) & 0xFF) / 255.0f;
+    		this.color1g = ( (color1 >> 8) & 0xFF ) / 255.0f;
+    		this.color1b = ( color1 & 0xFF ) / 255.0f;
+    		
+    		int color2 = Integer.decode(values[2]).intValue();
+    		this.color2r = ( (color2 >> 16) & 0xFF) / 255.0f;
+    		this.color2g = ( (color2 >> 8) & 0xFF ) / 255.0f;
+    		this.color2b = ( color2 & 0xFF ) / 255.0f;
+    		
+    		int color3 = Integer.decode(values[3]).intValue();
+    		this.color3r = ( (color3 >> 16) & 0xFF) / 255.0f;
+    		this.color3g = ( (color3 >> 8) & 0xFF ) / 255.0f;
+    		this.color3b = ( color3 & 0xFF ) / 255.0f;
+    	}
 
-        public float color0r, color0g, color0b;
-        public float color1r, color1g, color1b;
-        public float color2r, color2g, color2b;
-        public float color3r, color3g, color3b;
+    	public float color0r, color0g, color0b;
+    	public float color1r, color1g, color1b;
+    	public float color2r, color2g, color2b;
+    	public float color3r, color3g, color3b;
     }
     
     /*
@@ -162,8 +157,8 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         for (String presetId : presetIds) {
             preset[Integer.valueOf(presetId)] = new Preset(res.getStringArray(res.getIdentifier(
                     "nexus_colorscheme_" + presetId, "array", "com.android.wallpaper")));
-        }
-        return preset;
+    	}
+    	return preset;
     }
     
     @Override
@@ -201,8 +196,6 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         sb.setType(mStateType, "State", RSID_STATE);
         sb.setType(mCommandType, "Command", RSID_COMMAND);
 
-        Log.i("NexusLWP-createScript", "mColorScheme: '" + mCurrentPreset+"'");
-
         sb.setScript(mResources, R.raw.nexus);
 
         Script.Invokable invokable = sb.addInvokable("initPulses");
@@ -233,6 +226,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         public float color2r, color2g, color2b;
         public float color3r, color3g, color3b;
         public int background = 0;
+        public int mode;
     }
 
     static class CommandState {
@@ -264,8 +258,33 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
     
     private void createState() {
         mWorldState = new WorldState();
+        /* Try to load a user-specified colorscheme */
+
+        try {
+            mCurrentPreset = Integer.valueOf(mPrefs.getString("colorScheme", "0"));
+        } catch (NumberFormatException e) {
+            mCurrentPreset = -1; // We check this again later.
+        }
+
+        try {
+            mWorldState.mode = mResources.getInteger(R.integer.nexus_mode);
+        } catch (Resources.NotFoundException exc) {
+            mWorldState.mode = 0; // standard nexus mode
+        }
+
+        /* Sholes devices may specify nexus_mode=1 which means they want to use
+         * the "sholes red" colorscheme.
+         * 
+         * Other devices should use 'Dust' as the default.
+         */
+        if (mWorldState.mode == 1 && mCurrentPreset == -1) {
+            mCurrentPreset = 6; // Sholes Red
+        } else if (mWorldState.mode == 0 && mCurrentPreset == -1) {
+            mCurrentPreset = 0; // Dust
+        }
+
         makeNewState();
-        
+
         mStateType = Type.createFromClass(mRS, WorldState.class, 1, "WorldState");
         mState = Allocation.createTyped(mRS, mStateType);
         mState.data(mWorldState);
@@ -282,42 +301,63 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
     }
 
     private void loadTextures() {
-        loadTexture(R.drawable.pyramid_background, "TBackground");
-        loadTextureARGB(R.drawable.pulse, "TPulse");
-        loadTextureARGB(R.drawable.glow, "TGlow");
-        loadTexture(R.drawable.dark_pyramid_background, "TBackgroundDark");
+        mTextures[0] = loadTexture(R.drawable.pyramid_background, "TBackground");
+        mTextures[1] = loadTextureARGB(R.drawable.pulse, "TPulse");
+        mTextures[2] = loadTextureARGB(R.drawable.glow, "TGlow");
+        mTextures[3] = loadTexture(R.drawable.dark_pyramid_background, "TBackgroundDark");
+        
+        final int count = mTextures.length;
+        for (int i = 0; i < count; i++) {
+            mTextures[i].uploadToTexture(0);
+        }
     }
 
-    private void loadTexture(int id, String name) {
-        Allocation.createAndUploadFromBitmapResource(mRS, mResources, id, RGB_565(mRS), false, name, 0);
+    private Allocation loadTexture(int id, String name) {
+        final Allocation allocation = Allocation.createFromBitmapResource(mRS, mResources,
+                id, RGB_565(mRS), false);
+        allocation.setName(name);
+        return allocation;
     }
 
-    private void loadTextureARGB(int id, String name) {
+    private Allocation loadTextureARGB(int id, String name) {
         Bitmap b = BitmapFactory.decodeResource(mResources, id, mOptionsARGB);
-        Allocation.createAndUploadFromBitmap(mRS, b, RGBA_8888(mRS), false, name, 0);
+        final Allocation allocation = Allocation.createFromBitmap(mRS, b, RGBA_8888(mRS), false);
+        allocation.setName(name);
+        return allocation;
     }
 
     private void createProgramFragment() {
+        // sampler and program fragment for pulses
         Sampler.Builder sampleBuilder = new Sampler.Builder(mRS);
         sampleBuilder.setMin(LINEAR);
         sampleBuilder.setMag(LINEAR);
         sampleBuilder.setWrapS(WRAP);
         sampleBuilder.setWrapT(WRAP);
-        mSampler = sampleBuilder.create();
-
-        ProgramFragment.Builder builder = new ProgramFragment.Builder(mRS, null, null);
-        builder.setTexEnable(true, 0);
-        builder.setTexEnvMode(MODULATE, 0);
+        mWrapSampler = sampleBuilder.create();
+        ProgramFragment.Builder builder = new ProgramFragment.Builder(mRS);
+        builder.setTexture(ProgramFragment.Builder.EnvMode.MODULATE,
+                           ProgramFragment.Builder.Format.RGBA, 0);
         mPfTexture = builder.create();
         mPfTexture.setName("PFTexture");
-        mPfTexture.bindSampler(mSampler, 0);
+        mPfTexture.bindSampler(mWrapSampler, 0);
 
-        builder = new ProgramFragment.Builder(mRS, null, null);
-        builder.setTexEnable(true, 0);
-        builder.setTexEnvMode(REPLACE, 0);
+        builder = new ProgramFragment.Builder(mRS);
+        builder.setTexture(ProgramFragment.Builder.EnvMode.REPLACE,
+                           ProgramFragment.Builder.Format.RGB, 0);
         mPfColor = builder.create();
         mPfColor.setName("PFColor");
-        mPfColor.bindSampler(mSampler, 0);
+        mPfColor.bindSampler(mWrapSampler, 0);
+
+        // sampler and program fragment for background image
+        sampleBuilder.setWrapS(CLAMP);
+        sampleBuilder.setWrapT(CLAMP);
+        mClampSampler = sampleBuilder.create();
+        builder = new ProgramFragment.Builder(mRS);
+        builder.setTexture(ProgramFragment.Builder.EnvMode.MODULATE,
+                           ProgramFragment.Builder.Format.RGB, 0);
+        mPfTexture565 = builder.create();
+        mPfTexture565.setName("PFTexture565");
+        mPfTexture565.bindSampler(mClampSampler, 0);
     }
 
     private void createProgramFragmentStore() {
