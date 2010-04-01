@@ -86,6 +86,8 @@
     </string>
     
     <string name="nexus_settings">Nexus wallpaper settings</string>
+    <string name="nexus_colorscheme">Color Scheme</string>
+    <string name="nexus_background">Background</string>    
 
     <!-- Polar clock: title of settings activity -->
     <string name="clock_settings">Polar clock settings</string>
