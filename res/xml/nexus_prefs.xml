@@ -19,14 +19,14 @@
         android:key="nexus_settings">
 
     <ListPreference
-            android:key="nexus_colorscheme"
+            android:key="colorScheme"
             android:title="@string/nexus_colorscheme"
             android:entries="@array/nexus_colorscheme_names"
             android:entryValues="@array/nexus_colorscheme_ids"
             />
 
     <ListPreference
-            android:key="nexus_background"
+            android:key="background"
             android:title="@string/nexus_background"
             android:entries="@array/nexus_background_names"
             android:entryValues="@array/nexus_background_ids"
