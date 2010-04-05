@@ -32,7 +32,11 @@ import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.os.IHardwareService;
+import android.os.RemoteException;
+import android.os.ServiceManager;
 import android.renderscript.Allocation;
 import android.renderscript.ProgramFragment;
 import android.renderscript.ProgramStore;
@@ -52,7 +56,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
 
     private static final int RSID_COMMAND = 1;
 
-    private static final int TEXTURES_COUNT = 4;
+    private static final int TEXTURES_COUNT = 6; //changed number of textures from 5 to 6
 
     private final BitmapFactory.Options mOptionsARGB = new BitmapFactory.Options();
 
@@ -253,7 +257,17 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         mWorldState.color3g = mPreset[mCurrentPreset].color3g;
         mWorldState.color3b = mPreset[mCurrentPreset].color3b;
         
-        mWorldState.background = "dark".equals(mBackground) ? 1 : 0;
+        if (mBackground.equals("normal")) {
+            mWorldState.background = 0;
+        } else if (mBackground.equals("dark")) {
+            mWorldState.background = 1;
+        } else if (mBackground.equals("lookingglass")){
+            mWorldState.background = 2;
+	} else if (mBackground.equals("cyanogenmod")){ //added cyanogenmod for mBackground.equals
+	    mWorldState.background = 3; //set mWorldState.background to 3 if the cyanognemod background is used
+        } else {
+            mWorldState.background = 0;
+        }
     }
     
     private void createState() {
@@ -305,6 +319,8 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         mTextures[1] = loadTextureARGB(R.drawable.pulse, "TPulse");
         mTextures[2] = loadTextureARGB(R.drawable.glow, "TGlow");
         mTextures[3] = loadTexture(R.drawable.dark_pyramid_background, "TBackgroundDark");
+        mTextures[4] = loadTexture(R.drawable.lookingglass_background, "TBackgroundLookingGlass");
+	mTextures[5] = loadTexture(R.drawable.cyanogenmod_background, "TBackgroundCyanogenMod");
         
         final int count = mTextures.length;
         for (int i = 0; i < count; i++) {
@@ -400,6 +416,16 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         x = (int) (x + mWorldState.xOffset * (bw-dw));
 
         if ("android.wallpaper.tap".equals(action)) {
+            IHardwareService hardware = IHardwareService.Stub.asInterface(ServiceManager.getService("hardware"));
+		int colorR = (int)(mPreset[mCurrentPreset].color0r * 255.0); //get colorR
+		int colorG = (int)(mPreset[mCurrentPreset].color0g * 255.0); //get colorG
+		int colorB = (int)(mPreset[mCurrentPreset].color0b * 255.0); //get colorB
+		int colorValue = Color.rgb(colorR, colorG, colorB); //set colorValue based off of colorR, colorG and colorB
+            try {
+                hardware.pulseBreathingLightColor(colorValue); //flash the trackball on tap
+            } catch (RemoteException re) {
+                Log.e("NexusLWP", "Could not preview LED color", re);
+            }
             sendCommand(1, x, y);
         } else if ("android.home.drop".equals(action)) {
             sendCommand(2, x, y);

@@ -110,11 +110,16 @@
   <string-array name="nexus_background_names" translatable="false">
     <item>Normal</item>
     <item>Dark</item>
+    <item>Looking Glass</item>
+    <item>Cyanogenmod</item> //added option for cyanogenmod
+
   </string-array>
 
   <string-array name="nexus_background_ids" translatable="false">
     <item>normal</item>
     <item>dark</item>
+    <item>lookingglass</item>
+    <item>cyanogenmod</item> //added option for cyanogenmod
   </string-array>
 
 </resources>
