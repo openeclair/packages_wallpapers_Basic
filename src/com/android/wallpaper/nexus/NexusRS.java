@@ -315,12 +315,19 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
     }
 
     private void loadTextures() {
-        mTextures[0] = loadTexture(R.drawable.pyramid_background, "TBackground");
+        /*jeagoss
+         *Change loadTexture to loadTextureARGB to allow loading of 24bit RGB wallpapers
+         */
+        /*mTextures[0] = loadTexture(R.drawable.pyramid_background, "TBackground");*/
+        mTextures[0] = loadTextureARGB(R.drawable.pyramid_background, "TBackground");
         mTextures[1] = loadTextureARGB(R.drawable.pulse, "TPulse");
         mTextures[2] = loadTextureARGB(R.drawable.glow, "TGlow");
-        mTextures[3] = loadTexture(R.drawable.dark_pyramid_background, "TBackgroundDark");
-        mTextures[4] = loadTexture(R.drawable.lookingglass_background, "TBackgroundLookingGlass");
-	mTextures[5] = loadTexture(R.drawable.cyanogenmod_background, "TBackgroundCyanogenMod");
+        /*mTextures[3] = loadTexture(R.drawable.dark_pyramid_background, "TBackgroundDark");*/
+        mTextures[3] = loadTextureARGB(R.drawable.dark_pyramid_background, "TBackgroundDark");
+        /*mTextures[4] = loadTexture(R.drawable.lookingglass_background, "TBackgroundLookingGlass");*/
+        mTextures[4] = loadTextureARGB(R.drawable.lookingglass_background, "TBackgroundLookingGlass");
+	/*mTextures[5] = loadTexture(R.drawable.cyanogenmod_background, "TBackgroundCyanogenMod");*/
+	mTextures[5] = loadTextureARGB(R.drawable.cyanogenmod_background, "TBackgroundCyanogenMod");
         
         final int count = mTextures.length;
         for (int i = 0; i < count; i++) {
