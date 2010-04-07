@@ -461,13 +461,12 @@ class NexusRS extends RenderScriptScene implements
             int newPreset = Integer.valueOf(sharedPreferences.getString(key, "0"));
             if (newPreset != mCurrentPreset) {
                 mCurrentPreset = newPreset;
+                makeNewState();
+                mState.data(mWorldState);
             }
 
         } else if (key.equals("background")) {
             setDirty(true);
         }
-
-        makeNewState();
-        mState.data(mWorldState);
     }
 }

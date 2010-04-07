@@ -92,6 +92,7 @@ public abstract class RenderScriptWallpaper<T extends RenderScriptScene> extends
         private synchronized void initRendererIfDirty() {
             if (mRenderer != null && mRenderer.isDirty()) {
                 mRenderer.stop();
+                mRenderer.destroyScript();
                 mRenderer.setDirty(false);
                 mRenderer.init(mRs, getResources(), isPreview());
             }
