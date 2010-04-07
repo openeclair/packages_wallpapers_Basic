@@ -265,6 +265,8 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
             mWorldState.background = 2;
 	} else if (mBackground.equals("cyanogenmod")){ //added cyanogenmod for mBackground.equals
 	    mWorldState.background = 3; //set mWorldState.background to 3 if the cyanognemod background is used
+	} else if (mBackground.equals("droidbackground")){ //added droid_background for mBackground.equals
+	    mWorldState.background = 4; //set 
         } else {
             mWorldState.background = 0;
         }
@@ -328,6 +330,8 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         mTextures[4] = loadTextureARGB(R.drawable.lookingglass_background, "TBackgroundLookingGlass");
 	/*mTextures[5] = loadTexture(R.drawable.cyanogenmod_background, "TBackgroundCyanogenMod");*/
 	mTextures[5] = loadTextureARGB(R.drawable.cyanogenmod_background, "TBackgroundCyanogenMod");
+	/*mTextures[5] = loadTexture(R.drawable.droid_background, "TBackgroundDroidBackground");*/ //commented out to fix the lack of ARGB
+	mTextures[5] = loadTextureARGB(R.drawable.droid_background, "TBackgroundDroidBackground");
         
         final int count = mTextures.length;
         for (int i = 0; i < count; i++) {

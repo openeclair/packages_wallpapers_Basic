@@ -121,6 +121,7 @@
     <item>Dark</item>
     <item>Looking Glass</item>
     <item>Cyanogenmod</item> //added option for cyanogenmod
+    <item>Droid Background</item>// added jegoss's droid background
 
   </string-array>
 
@@ -129,6 +130,7 @@
     <item>dark</item>
     <item>lookingglass</item>
     <item>cyanogenmod</item> //added option for cyanogenmod
+    <item>droidbackground</item>//added jeagoss's droid background
   </string-array>
 
 </resources>
