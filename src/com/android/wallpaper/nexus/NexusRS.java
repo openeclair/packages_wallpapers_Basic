@@ -56,7 +56,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
 
     private static final int RSID_COMMAND = 1;
 
-    private static final int TEXTURES_COUNT = 6; //changed number of textures from 5 to 6
+    private static final int TEXTURES_COUNT = 7; //changed number of textures from 5 to 6
 
     private final BitmapFactory.Options mOptionsARGB = new BitmapFactory.Options();
 
@@ -324,14 +324,10 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         mTextures[0] = loadTextureARGB(R.drawable.pyramid_background, "TBackground");
         mTextures[1] = loadTextureARGB(R.drawable.pulse, "TPulse");
         mTextures[2] = loadTextureARGB(R.drawable.glow, "TGlow");
-        /*mTextures[3] = loadTexture(R.drawable.dark_pyramid_background, "TBackgroundDark");*/
         mTextures[3] = loadTextureARGB(R.drawable.dark_pyramid_background, "TBackgroundDark");
-        /*mTextures[4] = loadTexture(R.drawable.lookingglass_background, "TBackgroundLookingGlass");*/
         mTextures[4] = loadTextureARGB(R.drawable.lookingglass_background, "TBackgroundLookingGlass");
-	/*mTextures[5] = loadTexture(R.drawable.cyanogenmod_background, "TBackgroundCyanogenMod");*/
-	mTextures[4] = loadTextureARGB(R.drawable.cyanogenmod_background, "TBackgroundCyanogenMod");
-	/*mTextures[5] = loadTexture(R.drawable.droid_background, "TBackgroundDroidBackground");*/ //commented out to fix the lack of ARGB
-	mTextures[5] = loadTextureARGB(R.drawable.droid_background, "TBackgroundDroidBackground");
+	mTextures[5] = loadTextureARGB(R.drawable.cyanogenmod_background, "TBackgroundCyanogenMod");
+	mTextures[6] = loadTextureARGB(R.drawable.droid_background, "TBackgroundDroidBackground");
         
         final int count = mTextures.length;
         for (int i = 0; i < count; i++) {
