@@ -56,7 +56,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
 
     private static final int RSID_COMMAND = 1;
 
-    private static final int TEXTURES_COUNT = 7; //changed number of textures from 5 to 6
+    private static final int TEXTURES_COUNT = 7; //changed number of textures from 6 to 7
 
     private final BitmapFactory.Options mOptionsARGB = new BitmapFactory.Options();
 
