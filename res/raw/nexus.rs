@@ -118,6 +118,8 @@ void drawBackground(int width, int height) {
         bindTexture(NAMED_PFTexture565, 0, NAMED_TBackgroundLookingGlass);
     } else if (State->background == 3) { //added a else if for if set to 3 (cyanogenmod bg)
         bindTexture(NAMED_PFTexture565, 0, NAMED_TBackgroundCyanogenMod); //added cyanogenmod state
+    } else if (State->background == 4) { //added a else if for if set to 3 (cyanogenmod bg)
+        bindTexture(NAMED_PFTexture565, 0, NAMED_TBackgroundDroidBackground); //added jeagoss's droidbg
     }
     color(1.0f, 1.0f, 1.0f, 1.0f);
     if (State->rotate) {

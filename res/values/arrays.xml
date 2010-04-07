@@ -47,6 +47,7 @@
     <item>Candy</item>
     <item>Zion</item>
     <item>Sholes Red</item>
+    <item>Soft Blues</item>
   </string-array>
   <string-array name="nexus_colorscheme_ids" translatable="false">
     <item>0</item>
@@ -56,6 +57,7 @@
     <item>4</item>
     <item>5</item>
     <item>6</item>
+    <item>7</item>
   </string-array>
   
   <string-array name="nexus_colorscheme_0" translatable="false">
@@ -107,11 +109,19 @@
     <item>#E61A1A</item>
   </string-array>
 
+  <string-array name="nexus_colorscheme_7" translatable="false">
+    <item>#66CCDD</item>
+    <item>#3366AA</item>
+    <item>#6699AA</item>
+    <item>#AABBBB</item>
+  </string-array>
+
   <string-array name="nexus_background_names" translatable="false">
     <item>Normal</item>
     <item>Dark</item>
     <item>Looking Glass</item>
     <item>Cyanogenmod</item> //added option for cyanogenmod
+    <item>Blue Droid Background</item>// added jegoss's droid background
 
   </string-array>
 
@@ -120,6 +130,7 @@
     <item>dark</item>
     <item>lookingglass</item>
     <item>cyanogenmod</item> //added option for cyanogenmod
+    <item>droidbackground</item>//added jeagoss's droid background
   </string-array>
 
 </resources>

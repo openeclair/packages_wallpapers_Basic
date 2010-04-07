@@ -56,7 +56,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
 
     private static final int RSID_COMMAND = 1;
 
-    private static final int TEXTURES_COUNT = 6; //changed number of textures from 5 to 6
+    private static final int TEXTURES_COUNT = 7; //changed number of textures from 6 to 7
 
     private final BitmapFactory.Options mOptionsARGB = new BitmapFactory.Options();
 
@@ -265,6 +265,8 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
             mWorldState.background = 2;
 	} else if (mBackground.equals("cyanogenmod")){ //added cyanogenmod for mBackground.equals
 	    mWorldState.background = 3; //set mWorldState.background to 3 if the cyanognemod background is used
+	} else if (mBackground.equals("droidbackground")){ //added droid_background for mBackground.equals
+	    mWorldState.background = 4; //set 
         } else {
             mWorldState.background = 0;
         }
@@ -315,12 +317,17 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
     }
 
     private void loadTextures() {
-        mTextures[0] = loadTexture(R.drawable.pyramid_background, "TBackground");
+        /*jeagoss
+         *Change loadTexture to loadTextureARGB to allow loading of 24bit RGB wallpapers
+         */
+        /*mTextures[0] = loadTexture(R.drawable.pyramid_background, "TBackground");*/
+        mTextures[0] = loadTextureARGB(R.drawable.pyramid_background, "TBackground");
         mTextures[1] = loadTextureARGB(R.drawable.pulse, "TPulse");
         mTextures[2] = loadTextureARGB(R.drawable.glow, "TGlow");
-        mTextures[3] = loadTexture(R.drawable.dark_pyramid_background, "TBackgroundDark");
-        mTextures[4] = loadTexture(R.drawable.lookingglass_background, "TBackgroundLookingGlass");
-	mTextures[5] = loadTexture(R.drawable.cyanogenmod_background, "TBackgroundCyanogenMod");
+        mTextures[3] = loadTextureARGB(R.drawable.dark_pyramid_background, "TBackgroundDark");
+        mTextures[4] = loadTextureARGB(R.drawable.lookingglass_background, "TBackgroundLookingGlass");
+	mTextures[5] = loadTextureARGB(R.drawable.cyanogenmod_background, "TBackgroundCyanogenMod");
+	mTextures[6] = loadTextureARGB(R.drawable.droid_background, "TBackgroundDroidBackground");
         
         final int count = mTextures.length;
         for (int i = 0; i < count; i++) {
