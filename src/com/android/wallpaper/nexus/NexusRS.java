@@ -17,7 +17,6 @@
 package com.android.wallpaper.nexus;
 
 import static android.renderscript.Element.RGBA_8888;
-import static android.renderscript.Element.RGB_565;
 import static android.renderscript.ProgramStore.DepthFunc.ALWAYS;
 import static android.renderscript.Sampler.Value.LINEAR;
 import static android.renderscript.Sampler.Value.CLAMP;
@@ -426,24 +425,19 @@ class NexusRS extends RenderScriptScene implements
         x = (int) (x + mWorldState.xOffset * (bw - dw));
 
         if ("android.wallpaper.tap".equals(action)) {
-            IHardwareService hardware = IHardwareService.Stub.asInterface(ServiceManager
-                    .getService("hardware"));
-            int colorR = (int) (mPreset[mCurrentPreset].color0r * 255.0); // get
-                                                                          // colorR
-            int colorG = (int) (mPreset[mCurrentPreset].color0g * 255.0); // get
-                                                                          // colorG
-            int colorB = (int) (mPreset[mCurrentPreset].color0b * 255.0); // get
-                                                                          // colorB
-            int colorValue = Color.rgb(colorR, colorG, colorB); // set
-                                                                // colorValue
-                                                                // based off of
-                                                                // colorR,
-                                                                // colorG and
-                                                                // colorB
+            IHardwareService hardware = IHardwareService.Stub.asInterface(ServiceManager.getService("hardware"));
+            
+            // Get the colors from the preset
+            int colorR = (int) (mPreset[mCurrentPreset].color0r * 255.0);                                                                        
+            int colorG = (int) (mPreset[mCurrentPreset].color0g * 255.0);                                                            
+            int colorB = (int) (mPreset[mCurrentPreset].color0b * 255.0);
+                                   
+            int colorValue = Color.rgb(colorR, colorG, colorB); 
+            
             try {
-                hardware.pulseBreathingLightColor(colorValue); // flash the
-                                                               // trackball on
-                                                               // tap
+                // flash the trackball on tap
+                hardware.pulseBreathingLightColor(colorValue); 
+                
             } catch (RemoteException re) {
                 Log.e("NexusLWP", "Could not preview LED color", re);
             }
