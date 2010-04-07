@@ -329,7 +329,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         /*mTextures[4] = loadTexture(R.drawable.lookingglass_background, "TBackgroundLookingGlass");*/
         mTextures[4] = loadTextureARGB(R.drawable.lookingglass_background, "TBackgroundLookingGlass");
 	/*mTextures[5] = loadTexture(R.drawable.cyanogenmod_background, "TBackgroundCyanogenMod");*/
-	mTextures[5] = loadTextureARGB(R.drawable.cyanogenmod_background, "TBackgroundCyanogenMod");
+	mTextures[4] = loadTextureARGB(R.drawable.cyanogenmod_background, "TBackgroundCyanogenMod");
 	/*mTextures[5] = loadTexture(R.drawable.droid_background, "TBackgroundDroidBackground");*/ //commented out to fix the lack of ARGB
 	mTextures[5] = loadTextureARGB(R.drawable.droid_background, "TBackgroundDroidBackground");
         
