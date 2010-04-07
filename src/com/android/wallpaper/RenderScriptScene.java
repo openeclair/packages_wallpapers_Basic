@@ -29,7 +29,8 @@ public abstract class RenderScriptScene {
     protected Resources mResources;
     protected RenderScript mRS;
     protected ScriptC mScript;
-
+    protected boolean dirty = false;
+    
     public RenderScriptScene(int width, int height) {
         mWidth = width;
         mHeight = height;
@@ -72,6 +73,10 @@ public abstract class RenderScriptScene {
         mRS.contextBindRootScript(null);
     }
 
+    public void destroyScript() {
+        mScript.destroy();
+    }
+    
     public void start() {
         mRS.contextBindRootScript(mScript);
     }
@@ -81,6 +86,14 @@ public abstract class RenderScriptScene {
         mHeight = height;
     }
 
+    public boolean isDirty() {
+        return dirty;
+    }
+    
+    public void setDirty(boolean isDirty) {
+        this.dirty = isDirty;
+    }
+    
     @SuppressWarnings({"UnusedDeclaration"})
     public void setOffset(float xOffset, float yOffset, int xPixels, int yPixels) {
     }

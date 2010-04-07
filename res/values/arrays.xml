@@ -48,6 +48,7 @@
     <item>Zion</item>
     <item>Sholes Red</item>
     <item>Wes Garner</item>
+    <item>Soft Blues</item>
   </string-array>
   <string-array name="nexus_colorscheme_ids" translatable="false">
     <item>0</item>
@@ -58,6 +59,7 @@
     <item>5</item>
     <item>6</item>
     <item>7</item>
+    <item>8</item>
   </string-array>
   
   <string-array name="nexus_colorscheme_0" translatable="false">
@@ -116,19 +118,27 @@
     <item>#1B4B7D</item>
   </string-array>
 
+  <string-array name="nexus_colorscheme_8" translatable="false">
+    <item>#66CCDD</item>
+    <item>#3366AA</item>
+    <item>#6699AA</item>
+    <item>#AABBBB</item>
+  </string-array>
+
   <string-array name="nexus_background_names" translatable="false">
     <item>Normal</item>
     <item>Dark</item>
     <item>Looking Glass</item>
     <item>Cyanogenmod</item> //added option for cyanogenmod
-
+    <item>Blue Droid</item>// added jegoss's droid background
   </string-array>
 
   <string-array name="nexus_background_ids" translatable="false">
-    <item>normal</item>
-    <item>dark</item>
+    <item>pyramid</item>
+    <item>dark_pyramid</item>
     <item>lookingglass</item>
     <item>cyanogenmod</item> //added option for cyanogenmod
+    <item>droid</item>//added jeagoss's droid background
   </string-array>
 
 </resources>
