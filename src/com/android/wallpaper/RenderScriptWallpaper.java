@@ -64,9 +64,7 @@ public abstract class RenderScriptWallpaper<T extends RenderScriptScene> extends
             super.onVisibilityChanged(visible);
             if (mRenderer != null) {
                 if (visible) {
-                    if (mRenderer.isDirty()) {
-                        initRenderer(mRenderer.getWidth(), mRenderer.getHeight(), false);
-                    }
+                    initRendererIfDirty();
                     mRenderer.start();
                 } else {
                     mRenderer.stop();
@@ -82,23 +80,24 @@ public abstract class RenderScriptWallpaper<T extends RenderScriptScene> extends
                 mRs.contextSetSurface(width, height, holder.getSurface());
             }
             if (mRenderer == null || mRenderer.isDirty()) {
-                initRenderer(width, height, true);
+                if (mRenderer == null) {
+                    mRenderer = createScene(width, height);
+                    mRenderer.init(mRs, getResources(), isPreview());
+                } else {
+                    initRendererIfDirty();
+                }
+                mRenderer.start();
             } else {
                 mRenderer.resize(width, height);
             }
         }
 
-        private void initRenderer(int width, int height, boolean doStart) {
-            if (mRenderer == null || mRenderer.isDirty()) {
-                if (mRenderer != null && mRenderer.isDirty()) {
-                    mRenderer.stop();
-                    mRenderer.setDirty(false);
-                }
-                mRenderer = createScene(width, height);
+        private synchronized void initRendererIfDirty() {
+            if (mRenderer != null && mRenderer.isDirty()) {
+                Log.d("RSWallpaper", "Scene is dirty, stopping");
+                mRenderer.stop();
+                mRenderer.setDirty(false);
                 mRenderer.init(mRs, getResources(), isPreview());
-                if (doStart) {
-                    mRenderer.start();
-                }
             }
         }
         
