@@ -121,16 +121,15 @@
     <item>Dark</item>
     <item>Looking Glass</item>
     <item>Cyanogenmod</item> //added option for cyanogenmod
-    <item>Blue Droid Background</item>// added jegoss's droid background
-
+    <item>Blue Droid</item>// added jegoss's droid background
   </string-array>
 
   <string-array name="nexus_background_ids" translatable="false">
-    <item>normal</item>
-    <item>dark</item>
+    <item>pyramid</item>
+    <item>dark_pyramid</item>
     <item>lookingglass</item>
     <item>cyanogenmod</item> //added option for cyanogenmod
-    <item>droidbackground</item>//added jeagoss's droid background
+    <item>droid</item>//added jeagoss's droid background
   </string-array>
 
 </resources>

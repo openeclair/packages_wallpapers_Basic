@@ -17,7 +17,6 @@
 package com.android.wallpaper.nexus;
 
 import static android.renderscript.Element.RGBA_8888;
-import static android.renderscript.Element.RGB_565;
 import static android.renderscript.ProgramStore.DepthFunc.ALWAYS;
 import static android.renderscript.Sampler.Value.LINEAR;
 import static android.renderscript.Sampler.Value.CLAMP;
@@ -50,25 +49,28 @@ import android.renderscript.ProgramStore.BlendSrcFunc;
 
 import java.util.TimeZone;
 
-class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPreferenceChangeListener {
+class NexusRS extends RenderScriptScene implements
+        SharedPreferences.OnSharedPreferenceChangeListener {
 
     private static final int RSID_STATE = 0;
 
     private static final int RSID_COMMAND = 1;
 
-    private static final int TEXTURES_COUNT = 7; //changed number of textures from 6 to 7
+    private static final int TEXTURES_COUNT = 2; // changed number of textures
+                                                 // from 6 to 7
 
     private final BitmapFactory.Options mOptionsARGB = new BitmapFactory.Options();
 
-    private int mCurrentPreset = 0;
+    private static final String DEFAULT_BACKGROUND = "pyramid";
 
-    private String mBackground;
+    private int mCurrentPreset = 0;
 
     private static Context mContext;
 
     private SharedPreferences mPrefs;
 
     private ProgramFragment mPfTexture;
+
     private ProgramFragment mPfTexture565;
 
     private ProgramFragment mPfColor;
@@ -82,6 +84,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
     private ProgramVertex.MatrixAllocation mPvOrthoAlloc;
 
     private Sampler mClampSampler;
+
     private Sampler mWrapSampler;
 
     private Allocation mState;
@@ -97,9 +100,9 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
     private CommandState mCommand;
 
     private Allocation[] mTextures = new Allocation[TEXTURES_COUNT];
-    
+
     public static Preset[] mPreset;
-        
+
     public NexusRS(Context context, int width, int height) {
         super(width, height);
 
@@ -108,63 +111,75 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         mPrefs.registerOnSharedPreferenceChangeListener(this);
         mPreset = buildColors();
 
-        mBackground = mPrefs.getString("background","normal");
         mOptionsARGB.inScaled = false;
         mOptionsARGB.inPreferredConfig = Bitmap.Config.ARGB_8888;
     }
 
     static class Preset {
         /**
-         * @param String[] values: String array of HEX color values (ex: "#FFFFFF").
+         * @param String[] values: String array of HEX color values (ex:
+         *            "#FFFFFF").
          */
-    	public Preset(String[] values) {
-    		super();
-    		
-    		int color0 = Integer.decode(values[0]).intValue();
-    		this.color0r = ( (color0 >> 16) & 0xFF) / 255.0f;
-    		this.color0g = ( (color0 >> 8) & 0xFF ) / 255.0f;
-    		this.color0b = ( color0 & 0xFF ) / 255.0f;
-    		
-    		int color1 = Integer.decode(values[1]).intValue();
-    		this.color1r = ( (color1 >> 16) & 0xFF) / 255.0f;
-    		this.color1g = ( (color1 >> 8) & 0xFF ) / 255.0f;
-    		this.color1b = ( color1 & 0xFF ) / 255.0f;
-    		
-    		int color2 = Integer.decode(values[2]).intValue();
-    		this.color2r = ( (color2 >> 16) & 0xFF) / 255.0f;
-    		this.color2g = ( (color2 >> 8) & 0xFF ) / 255.0f;
-    		this.color2b = ( color2 & 0xFF ) / 255.0f;
-    		
-    		int color3 = Integer.decode(values[3]).intValue();
-    		this.color3r = ( (color3 >> 16) & 0xFF) / 255.0f;
-    		this.color3g = ( (color3 >> 8) & 0xFF ) / 255.0f;
-    		this.color3b = ( color3 & 0xFF ) / 255.0f;
-    	}
+        public Preset(String[] values) {
+            super();
 
-    	public float color0r, color0g, color0b;
-    	public float color1r, color1g, color1b;
-    	public float color2r, color2g, color2b;
-    	public float color3r, color3g, color3b;
+            int color0 = Integer.decode(values[0]).intValue();
+            this.color0r = ((color0 >> 16) & 0xFF) / 255.0f;
+            this.color0g = ((color0 >> 8) & 0xFF) / 255.0f;
+            this.color0b = (color0 & 0xFF) / 255.0f;
+
+            int color1 = Integer.decode(values[1]).intValue();
+            this.color1r = ((color1 >> 16) & 0xFF) / 255.0f;
+            this.color1g = ((color1 >> 8) & 0xFF) / 255.0f;
+            this.color1b = (color1 & 0xFF) / 255.0f;
+
+            int color2 = Integer.decode(values[2]).intValue();
+            this.color2r = ((color2 >> 16) & 0xFF) / 255.0f;
+            this.color2g = ((color2 >> 8) & 0xFF) / 255.0f;
+            this.color2b = (color2 & 0xFF) / 255.0f;
+
+            int color3 = Integer.decode(values[3]).intValue();
+            this.color3r = ((color3 >> 16) & 0xFF) / 255.0f;
+            this.color3g = ((color3 >> 8) & 0xFF) / 255.0f;
+            this.color3b = (color3 & 0xFF) / 255.0f;
+        }
+
+        public float color0r, color0g, color0b;
+
+        public float color1r, color1g, color1b;
+
+        public float color2r, color2g, color2b;
+
+        public float color3r, color3g, color3b;
     }
-    
+
     /*
      * Build an array of Presets dynamically from XML.
-     * 
      * @author Chris Soyars / Steve Kondik
      * @return Array of Preset instances.
      */
-    public static Preset[] buildColors() {
-        
+    private static Preset[] buildColors() {
+
         final Resources res = mContext.getResources();
         final String[] presetIds = res.getStringArray(R.array.nexus_colorscheme_ids);
         final Preset[] preset = new Preset[presetIds.length];
         for (String presetId : presetIds) {
             preset[Integer.valueOf(presetId)] = new Preset(res.getStringArray(res.getIdentifier(
                     "nexus_colorscheme_" + presetId, "array", "com.android.wallpaper")));
-    	}
-    	return preset;
+        }
+        return preset;
     }
-    
+
+    private void setBackground(String resourceName) {
+
+        final Resources res = mContext.getResources();
+        int bgId = res.getIdentifier(resourceName + "_background", "drawable",
+                "com.android.wallpaper");
+        final Allocation bg = loadTextureARGB(bgId, "TBackground");
+        bg.uploadToTexture(0);
+        Log.d("NexusRS", "Uploaded background id: " + bg.getID());
+    }
+
     @Override
     public void setOffset(float xOffset, float yOffset, int xPixels, int yPixels) {
         mWorldState.xOffset = xOffset;
@@ -213,29 +228,41 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         script.bindAllocation(mCommandAllocation, RSID_COMMAND);
 
         invokable.execute();
-        
+
         return script;
     }
 
     static class WorldState {
         public int width;
+
         public int height;
+
         public float glWidth;
+
         public float glHeight;
+
         public int rotate;
+
         public int isPreview;
+
         public float xOffset;
+
         public float color0r, color0g, color0b;
+
         public float color1r, color1g, color1b;
+
         public float color2r, color2g, color2b;
+
         public float color3r, color3g, color3b;
-        public int background = 0;
+
         public int mode;
     }
 
     static class CommandState {
         public int x;
+
         public int y;
+
         public int command;
     }
 
@@ -256,22 +283,8 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         mWorldState.color3r = mPreset[mCurrentPreset].color3r;
         mWorldState.color3g = mPreset[mCurrentPreset].color3g;
         mWorldState.color3b = mPreset[mCurrentPreset].color3b;
-        
-        if (mBackground.equals("normal")) {
-            mWorldState.background = 0;
-        } else if (mBackground.equals("dark")) {
-            mWorldState.background = 1;
-        } else if (mBackground.equals("lookingglass")){
-            mWorldState.background = 2;
-	} else if (mBackground.equals("cyanogenmod")){ //added cyanogenmod for mBackground.equals
-	    mWorldState.background = 3; //set mWorldState.background to 3 if the cyanognemod background is used
-	} else if (mBackground.equals("droidbackground")){ //added droid_background for mBackground.equals
-	    mWorldState.background = 4; //set 
-        } else {
-            mWorldState.background = 0;
-        }
     }
-    
+
     private void createState() {
         mWorldState = new WorldState();
         /* Try to load a user-specified colorscheme */
@@ -288,10 +301,10 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
             mWorldState.mode = 0; // standard nexus mode
         }
 
-        /* Sholes devices may specify nexus_mode=1 which means they want to use
-         * the "sholes red" colorscheme.
-         * 
-         * Other devices should use 'Dust' as the default.
+        /*
+         * Sholes devices may specify nexus_mode=1 which means they want to use
+         * the "sholes red" colorscheme. Other devices should use 'Dust' as the
+         * default.
          */
         if (mWorldState.mode == 1 && mCurrentPreset == -1) {
             mCurrentPreset = 6; // Sholes Red
@@ -313,33 +326,21 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         mCommandType = Type.createFromClass(mRS, CommandState.class, 1, "DropState");
         mCommandAllocation = Allocation.createTyped(mRS, mCommandType);
         mCommandAllocation.data(mCommand);
-        
+
     }
 
     private void loadTextures() {
-        /*jeagoss
-         *Change loadTexture to loadTextureARGB to allow loading of 24bit RGB wallpapers
-         */
-        /*mTextures[0] = loadTexture(R.drawable.pyramid_background, "TBackground");*/
-        mTextures[0] = loadTextureARGB(R.drawable.pyramid_background, "TBackground");
-        mTextures[1] = loadTextureARGB(R.drawable.pulse, "TPulse");
-        mTextures[2] = loadTextureARGB(R.drawable.glow, "TGlow");
-        mTextures[3] = loadTextureARGB(R.drawable.dark_pyramid_background, "TBackgroundDark");
-        mTextures[4] = loadTextureARGB(R.drawable.lookingglass_background, "TBackgroundLookingGlass");
-	mTextures[5] = loadTextureARGB(R.drawable.cyanogenmod_background, "TBackgroundCyanogenMod");
-	mTextures[6] = loadTextureARGB(R.drawable.droid_background, "TBackgroundDroidBackground");
-        
+
+        mTextures[0] = loadTextureARGB(R.drawable.pulse, "TPulse");
+        mTextures[1] = loadTextureARGB(R.drawable.glow, "TGlow");
+
         final int count = mTextures.length;
         for (int i = 0; i < count; i++) {
             mTextures[i].uploadToTexture(0);
         }
-    }
 
-    private Allocation loadTexture(int id, String name) {
-        final Allocation allocation = Allocation.createFromBitmapResource(mRS, mResources,
-                id, RGB_565(mRS), false);
-        allocation.setName(name);
-        return allocation;
+        setBackground(mPrefs.getString("background", DEFAULT_BACKGROUND));
+
     }
 
     private Allocation loadTextureARGB(int id, String name) {
@@ -359,14 +360,14 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         mWrapSampler = sampleBuilder.create();
         ProgramFragment.Builder builder = new ProgramFragment.Builder(mRS);
         builder.setTexture(ProgramFragment.Builder.EnvMode.MODULATE,
-                           ProgramFragment.Builder.Format.RGBA, 0);
+                ProgramFragment.Builder.Format.RGBA, 0);
         mPfTexture = builder.create();
         mPfTexture.setName("PFTexture");
         mPfTexture.bindSampler(mWrapSampler, 0);
 
         builder = new ProgramFragment.Builder(mRS);
         builder.setTexture(ProgramFragment.Builder.EnvMode.REPLACE,
-                           ProgramFragment.Builder.Format.RGB, 0);
+                ProgramFragment.Builder.Format.RGB, 0);
         mPfColor = builder.create();
         mPfColor.setName("PFColor");
         mPfColor.bindSampler(mWrapSampler, 0);
@@ -377,7 +378,7 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         mClampSampler = sampleBuilder.create();
         builder = new ProgramFragment.Builder(mRS);
         builder.setTexture(ProgramFragment.Builder.EnvMode.MODULATE,
-                           ProgramFragment.Builder.Format.RGB, 0);
+                ProgramFragment.Builder.Format.RGB, 0);
         mPfTexture565 = builder.create();
         mPfTexture565.setName("PFTexture565");
         mPfTexture565.bindSampler(mClampSampler, 0);
@@ -394,7 +395,8 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
 
         builder = new ProgramStore.Builder(mRS, null, null);
         builder.setDepthFunc(ALWAYS);
-       //  builder.setBlendFunc(BlendSrcFunc.SRC_ALPHA, BlendDstFunc.ONE_MINUS_SRC_ALPHA);
+        // builder.setBlendFunc(BlendSrcFunc.SRC_ALPHA,
+        // BlendDstFunc.ONE_MINUS_SRC_ALPHA);
         builder.setBlendFunc(BlendSrcFunc.SRC_ALPHA, BlendDstFunc.ONE);
 
         builder.setDitherEnable(false);
@@ -420,16 +422,22 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
 
         final int dw = mWorldState.width;
         final int bw = 960;
-        x = (int) (x + mWorldState.xOffset * (bw-dw));
+        x = (int) (x + mWorldState.xOffset * (bw - dw));
 
         if ("android.wallpaper.tap".equals(action)) {
             IHardwareService hardware = IHardwareService.Stub.asInterface(ServiceManager.getService("hardware"));
-		int colorR = (int)(mPreset[mCurrentPreset].color0r * 255.0); //get colorR
-		int colorG = (int)(mPreset[mCurrentPreset].color0g * 255.0); //get colorG
-		int colorB = (int)(mPreset[mCurrentPreset].color0b * 255.0); //get colorB
-		int colorValue = Color.rgb(colorR, colorG, colorB); //set colorValue based off of colorR, colorG and colorB
+            
+            // Get the colors from the preset
+            int colorR = (int) (mPreset[mCurrentPreset].color0r * 255.0);                                                                        
+            int colorG = (int) (mPreset[mCurrentPreset].color0g * 255.0);                                                            
+            int colorB = (int) (mPreset[mCurrentPreset].color0b * 255.0);
+                                   
+            int colorValue = Color.rgb(colorR, colorG, colorB); 
+            
             try {
-                hardware.pulseBreathingLightColor(colorValue); //flash the trackball on tap
+                // flash the trackball on tap
+                hardware.pulseBreathingLightColor(colorValue); 
+                
             } catch (RemoteException re) {
                 Log.e("NexusLWP", "Could not preview LED color", re);
             }
@@ -447,20 +455,18 @@ class NexusRS extends RenderScriptScene implements SharedPreferences.OnSharedPre
         mCommandAllocation.data(mCommand);
     }
 
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
-           String key) {
-        
-        int newPreset = Integer.valueOf(sharedPreferences.getString("colorScheme", "0"));
-        if (newPreset != mCurrentPreset) {
-            mCurrentPreset = newPreset;
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+
+        if (key.equals("colorScheme")) {
+            int newPreset = Integer.valueOf(sharedPreferences.getString(key, "0"));
+            if (newPreset != mCurrentPreset) {
+                mCurrentPreset = newPreset;
+                makeNewState();
+                mState.data(mWorldState);
+            }
+
+        } else if (key.equals("background")) {
+            setDirty(true);
         }
-        
-        if (key.equals("background")) {
-            mBackground = sharedPreferences.getString("background", "normal");
-            mWorldState.background = "dark".equals(mBackground) ? 1 : 0;
-        }
-        
-        makeNewState();
-        mState.data(mWorldState);
     }
 }

@@ -16,11 +16,11 @@
 
 package com.android.wallpaper;
 
-import android.service.wallpaper.WallpaperService;
 import android.os.Bundle;
 import android.renderscript.RenderScript;
-import android.view.SurfaceHolder;
+import android.service.wallpaper.WallpaperService;
 import android.view.Surface;
+import android.view.SurfaceHolder;
 
 public abstract class RenderScriptWallpaper<T extends RenderScriptScene> extends WallpaperService {
     public Engine onCreateEngine() {
@@ -62,6 +62,7 @@ public abstract class RenderScriptWallpaper<T extends RenderScriptScene> extends
             super.onVisibilityChanged(visible);
             if (mRenderer != null) {
                 if (visible) {
+                    initRendererIfDirty();
                     mRenderer.start();
                 } else {
                     mRenderer.stop();
@@ -75,15 +76,28 @@ public abstract class RenderScriptWallpaper<T extends RenderScriptScene> extends
             if (mRs != null) {
                 mRs.contextSetSurface(width, height, holder.getSurface());
             }
-            if (mRenderer == null) {
-                mRenderer = createScene(width, height);
-                mRenderer.init(mRs, getResources(), isPreview());
+            if (mRenderer == null || mRenderer.isDirty()) {
+                if (mRenderer == null) {
+                    mRenderer = createScene(width, height);
+                    mRenderer.init(mRs, getResources(), isPreview());
+                } else {
+                    initRendererIfDirty();
+                }
                 mRenderer.start();
             } else {
                 mRenderer.resize(width, height);
             }
         }
 
+        private synchronized void initRendererIfDirty() {
+            if (mRenderer != null && mRenderer.isDirty()) {
+                mRenderer.stop();
+                mRenderer.destroyScript();
+                mRenderer.setDirty(false);
+                mRenderer.init(mRs, getResources(), isPreview());
+            }
+        }
+        
         @Override
         public void onOffsetsChanged(float xOffset, float yOffset,
                 float xStep, float yStep, int xPixels, int yPixels) {

@@ -110,23 +110,13 @@ void initPulses() {
 
 void drawBackground(int width, int height) {
     bindProgramFragment(NAMED_PFTexture565);
-    if (State->background == 0) {
-        bindTexture(NAMED_PFTexture565, 0, NAMED_TBackground);
-    } else if (State->background == 1) {
-        bindTexture(NAMED_PFTexture565, 0, NAMED_TBackgroundDark);
-    } else if (State->background == 2) { //changed from a else to a else if
-        bindTexture(NAMED_PFTexture565, 0, NAMED_TBackgroundLookingGlass);
-    } else if (State->background == 3) { //added a else if for if set to 3 (cyanogenmod bg)
-        bindTexture(NAMED_PFTexture565, 0, NAMED_TBackgroundCyanogenMod); //added cyanogenmod state
-    } else if (State->background == 4) { //added a else if for if set to 3 (cyanogenmod bg)
-        bindTexture(NAMED_PFTexture565, 0, NAMED_TBackgroundDroidBackground); //added jeagoss's droidbg
-    }
+    bindTexture(NAMED_PFTexture565, 0, NAMED_TBackground);
     color(1.0f, 1.0f, 1.0f, 1.0f);
     if (State->rotate) {
         drawRect(0.0f, 0.0f, height*2, width, 0.0f);
     } else {
     	drawRect(0.0f, 0.0f, width*2, height, 0.0f);
-   	}
+    }
 }
 
 
