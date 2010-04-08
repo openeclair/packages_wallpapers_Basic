@@ -73,10 +73,6 @@ public abstract class RenderScriptScene {
         mRS.contextBindRootScript(null);
     }
 
-    public void destroyScript() {
-        mScript.destroy();
-    }
-    
     public void start() {
         mRS.contextBindRootScript(mScript);
     }
