@@ -172,12 +172,16 @@ class NexusRS extends RenderScriptScene implements
 
     private void setBackground(String resourceName) {
 
+        // For compatibility with previous versions
+        if (resourceName == null || "normal".equals(resourceName)) {
+            resourceName = DEFAULT_BACKGROUND;
+        }
+
         final Resources res = mContext.getResources();
         int bgId = res.getIdentifier(resourceName + "_background", "drawable",
                 "com.android.wallpaper");
         final Allocation bg = loadTextureARGB(bgId, "TBackground");
         bg.uploadToTexture(0);
-        Log.d("NexusRS", "Uploaded background id: " + bg.getID());
     }
 
     @Override

@@ -32,10 +32,12 @@ public abstract class RenderScriptWallpaper<T extends RenderScriptScene> extends
     private class RenderScriptEngine extends Engine {
         private RenderScript mRs;
         private T mRenderer;
+        private SurfaceHolder mSurfaceHolder;
 
         @Override
         public void onCreate(SurfaceHolder surfaceHolder) {
             super.onCreate(surfaceHolder);
+            mSurfaceHolder = surfaceHolder;
             setTouchEventsEnabled(false);
             surfaceHolder.setSizeFromLayout();
         }
@@ -73,16 +75,13 @@ public abstract class RenderScriptWallpaper<T extends RenderScriptScene> extends
         @Override
         public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
             super.onSurfaceChanged(holder, format, width, height);
+
             if (mRs != null) {
                 mRs.contextSetSurface(width, height, holder.getSurface());
             }
-            if (mRenderer == null || mRenderer.isDirty()) {
-                if (mRenderer == null) {
-                    mRenderer = createScene(width, height);
-                    mRenderer.init(mRs, getResources(), isPreview());
-                } else {
-                    initRendererIfDirty();
-                }
+            if (mRenderer == null) {
+                mRenderer = createScene(width, height);
+                mRenderer.init(mRs, getResources(), isPreview());
                 mRenderer.start();
             } else {
                 mRenderer.resize(width, height);
@@ -91,9 +90,18 @@ public abstract class RenderScriptWallpaper<T extends RenderScriptScene> extends
 
         private synchronized void initRendererIfDirty() {
             if (mRenderer != null && mRenderer.isDirty()) {
-                mRenderer.stop();
-                mRenderer.destroyScript();
-                mRenderer.setDirty(false);
+
+                int height = mRenderer.getHeight();
+                int width = mRenderer.getWidth();
+
+                destroyRenderer();
+
+                mRs = new RenderScript(false, false);
+                mRs.contextSetPriority(RenderScript.Priority.LOW);
+
+                mRs.contextSetSurface(width, height, mSurfaceHolder.getSurface());
+
+                mRenderer = createScene(width, height);
                 mRenderer.init(mRs, getResources(), isPreview());
             }
         }
