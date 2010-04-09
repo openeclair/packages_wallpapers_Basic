@@ -34,6 +34,21 @@
     <string name="wallpaper_nexus" msgid="3789061608411260304">"Nexus"</string>
     <string name="wallpaper_nexus_author" msgid="8492858637541249441">"Google"</string>
     <string name="wallpaper_nexus_desc" msgid="5562598238151885905">"Ein Blick ins neuronale Netzwerk"</string>
+
+    <!-- Wallpaper showing nexus -->
+    <string name="wallpaper_darknexus">DarkNexus</string>
+    <string name="wallpaper_darknexus_author">Chris Soyars</string>
+    <string name="wallpaper_darknexus_desc">Ein Blick ins dunkle neuronale Netzwerk</string>
+
+    <!-- Wallpaper showing nexus -->
+    <string name="wallpaper_sexynexus">SexyNexus</string>
+    <string name="wallpaper_sexynexus_author">Chris Soyars</string>
+    <string name="wallpaper_sexynexus_desc">Ein Blick ins neuronale Netzwerk (für die Damen)</string>
+
+    <string name="nexus_settings">Nexus Wallpaper Einstellungen</string>
+    <string name="nexus_colorscheme">Farbschema</string>
+    <string name="nexus_background">Hintergrund</string>
+
     <string name="clock_settings" msgid="7837858747417927288">"Polaruhr-Einstellungen"</string>
     <string name="show_seconds" msgid="8525899907567218168">"Sekunden anzeigen"</string>
     <string name="variable_line_width" msgid="8487094734462263605">"Ringweiten verändern"</string>
