@@ -46,6 +46,7 @@
     <string name="palette_halloween" msgid="1502590278217616811">"Torta di zucca"</string>
     <string name="palette_zenburn" msgid="5537306782860767365">"Macedonia aliena"</string>
     <string name="palette_oceanic" msgid="7336134088073550028">"Laser blu"</string>
+    <string name="nexus_settings">Impostazioni Nexus wallpaper</string>
     <string name="nexus_colorscheme">Colori</string>
     <string name="nexus_background">Sfondo</string>
 </resources>
