@@ -61,9 +61,11 @@ class NexusRS extends RenderScriptScene implements
 
     private final BitmapFactory.Options mOptionsARGB = new BitmapFactory.Options();
 
-    private static final String DEFAULT_BACKGROUND = "pyramid";
+    private static final String DEFAULT_BACKGROUND = "droid"; // blue droid
 
-    private int mCurrentPreset = 0;
+    private static final int DEFAULT_PRESET = 7; // soft blues
+    
+    private int mCurrentPreset;
 
     private static Context mContext;
 
@@ -172,12 +174,16 @@ class NexusRS extends RenderScriptScene implements
 
     private void setBackground(String resourceName) {
 
+        // For compatibility with previous versions
+        if (resourceName == null || "normal".equals(resourceName)) {
+            resourceName = DEFAULT_BACKGROUND;
+        }
+
         final Resources res = mContext.getResources();
         int bgId = res.getIdentifier(resourceName + "_background", "drawable",
                 "com.android.wallpaper");
         final Allocation bg = loadTextureARGB(bgId, "TBackground");
         bg.uploadToTexture(0);
-        Log.d("NexusRS", "Uploaded background id: " + bg.getID());
     }
 
     @Override
@@ -290,7 +296,7 @@ class NexusRS extends RenderScriptScene implements
         /* Try to load a user-specified colorscheme */
 
         try {
-            mCurrentPreset = Integer.valueOf(mPrefs.getString("colorScheme", "0"));
+            mCurrentPreset = Integer.valueOf(mPrefs.getString("colorScheme", "-1"));
         } catch (NumberFormatException e) {
             mCurrentPreset = -1; // We check this again later.
         }
@@ -303,13 +309,12 @@ class NexusRS extends RenderScriptScene implements
 
         /*
          * Sholes devices may specify nexus_mode=1 which means they want to use
-         * the "sholes red" colorscheme. Other devices should use 'Dust' as the
-         * default.
+         * the "sholes red" colorscheme. 
          */
         if (mWorldState.mode == 1 && mCurrentPreset == -1) {
             mCurrentPreset = 6; // Sholes Red
         } else if (mWorldState.mode == 0 && mCurrentPreset == -1) {
-            mCurrentPreset = 0; // Dust
+            mCurrentPreset = DEFAULT_PRESET;
         }
 
         makeNewState();
