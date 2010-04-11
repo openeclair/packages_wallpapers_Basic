@@ -131,6 +131,7 @@
     <item>Looking Glass</item>
     <item>Cyanogenmod</item> //added option for cyanogenmod
     <item>Blue Droid</item>// added jegoss's droid background
+    <item>Dark Droid</item>
   </string-array>
 
   <string-array name="nexus_background_ids" translatable="false">
@@ -139,6 +140,7 @@
     <item>lookingglass</item>
     <item>cyanogenmod</item> //added option for cyanogenmod
     <item>droid</item>//added jeagoss's droid background
+    <item>dark_droid</item>
   </string-array>
 
 </resources>
